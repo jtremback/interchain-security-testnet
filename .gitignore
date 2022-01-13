@@ -1,0 +1,9 @@
+gravity
+tla/states
+tla/*.out
+docker/
+*/.modelator
+
+# Added by cargo
+
+rust/target

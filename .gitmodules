@@ -1,0 +1,3 @@
+[submodule "cosmos-gravity-bridge"]
+	path = cosmos-gravity-bridge
+	url = https://github.com/althea-net/cosmos-gravity-bridge
