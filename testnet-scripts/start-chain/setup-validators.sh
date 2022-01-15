@@ -14,8 +14,7 @@ ALLOCATION="10000000000stake,10000000000footoken"
 
 # first we start a genesis.json with validator 1
 # validator 1 will also collect the gentx's once gnerated
-STARTING_VALIDATOR=1
-STARTING_VALIDATOR_HOME="--home /$CHAIN_ID/validator$STARTING_VALIDATOR"
+STARTING_VALIDATOR_HOME="--home /$CHAIN_ID/validator1"
 # todo add git hash to chain name
 $BIN init $STARTING_VALIDATOR_HOME --chain-id=$CHAIN_ID validator1
 
@@ -25,7 +24,7 @@ $BIN init $STARTING_VALIDATOR_HOME --chain-id=$CHAIN_ID validator1
 ## testing the generated one with the default values provided by the module.
 
 # a 60 second voting period to allow us to pass governance proposals in the tests
-jq '.app_state.gov.voting_params.voting_period = "60s"' /$CHAIN_ID/validator$STARTING_VALIDATOR/config/genesis.json > /$CHAIN_ID/edited-genesis.json
+jq '.app_state.gov.voting_params.voting_period = "60s"' /$CHAIN_ID/validator1/config/genesis.json > /$CHAIN_ID/edited-genesis.json
 
 mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 
