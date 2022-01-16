@@ -4,11 +4,8 @@ set -eux
 BIN=$1
 NODES=$2
 CHAIN_ID=$3
-
-# This is the first 3 fields of the IP addresses which will be used internally by the validators of this blockchain
-# Recommended to use something starting with 7, since it is squatted by the DoD and is unroutable on the internet
-# For example: "7.7.7"
 CHAIN_IP_PREFIX=$4
+GENESIS_TRANSFORM=$5
 
 ALLOCATION="10000000000stake,10000000000footoken"
 
@@ -23,8 +20,8 @@ $BIN init $STARTING_VALIDATOR_HOME --chain-id=$CHAIN_ID validator1
 ## we could keep a hardcoded genesis file around but that would prevent us from
 ## testing the generated one with the default values provided by the module.
 
-# a 60 second voting period to allow us to pass governance proposals in the tests
-jq '.app_state.gov.voting_params.voting_period = "60s"' /$CHAIN_ID/validator1/config/genesis.json > /$CHAIN_ID/edited-genesis.json
+# Apply transformations to genesis file
+jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator1/config/genesis.json > /$CHAIN_ID/edited-genesis.json
 
 mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 
@@ -44,13 +41,12 @@ do
     # $BIN eth_keys add >> /validator-eth-keys
 
     VALIDATOR_KEY=$($BIN keys show validator$i -a $ARGS)
-    ORCHESTRATOR_KEY=$($BIN keys show orchestrator$i -a $ARGS)
     # move the genesis in
     mkdir -p /$CHAIN_ID/validator$i/config/
     ls /$CHAIN_ID/
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
     $BIN add-genesis-account $ARGS $VALIDATOR_KEY $ALLOCATION
-    $BIN add-genesis-account $ARGS $ORCHESTRATOR_KEY $ALLOCATION
+
     # move the genesis back out
     mv /$CHAIN_ID/validator$i/config/genesis.json /$CHAIN_ID/genesis.json
 done

@@ -24,5 +24,8 @@ RPC_PORT=$5
 # Default: 9090
 GRPC_PORT=$6
 
-/bin/bash "$DIR/setup-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX"
+# A transformation to apply to the genesis file, as a jq string
+GENESIS_TRANSFORMATION=$7
+
+/bin/bash "$DIR/setup-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORMATION"
 /bin/bash "$DIR/start-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$RPC_PORT" "$GRPC_PORT"
