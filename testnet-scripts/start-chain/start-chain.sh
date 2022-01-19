@@ -29,3 +29,5 @@ GENESIS_TRANSFORMATION=$7
 
 /bin/bash "$DIR/setup-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORMATION"
 /bin/bash "$DIR/start-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$RPC_PORT" "$GRPC_PORT"
+
+read -p "Press Return to Close..."
