@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+# set -eux
 
 CONTAINER_NAME=$1
 INSTANCE_NAME=$2

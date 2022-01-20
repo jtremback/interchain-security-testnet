@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+# set -eux
 
 BIN=$1
 NODES=$2
@@ -36,14 +36,13 @@ do
     ARGS="$GAIA_HOME --keyring-backend test"
 
     # Generate a validator key, orchestrator key, and eth key for each validator
-    $BIN keys add $ARGS validator$i 2>> /validator-phrases
-    $BIN keys add $ARGS orchestrator$i 2>> /orchestrator-phrases
+    $BIN keys add $ARGS validator$i 2>> /$CHAIN_ID/validator$i/mnemonic
+    # $BIN keys add $ARGS orchestrator$i 2>> /orchestrator-phrases
     # $BIN eth_keys add >> /validator-eth-keys
 
     VALIDATOR_KEY=$($BIN keys show validator$i -a $ARGS)
     # move the genesis in
     mkdir -p /$CHAIN_ID/validator$i/config/
-    ls /$CHAIN_ID/
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
     $BIN add-genesis-account $ARGS $VALIDATOR_KEY $ALLOCATION
 

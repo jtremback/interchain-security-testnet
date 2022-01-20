@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+# set -eux
 
 BIN=$1
 NODES=$2
@@ -47,3 +47,4 @@ do
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
     # $BIN $ARGS start &
 done
+echo "done!!!!!!!!"
