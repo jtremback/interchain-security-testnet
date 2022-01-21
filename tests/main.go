@@ -13,18 +13,15 @@ func main() {
 	start_docker("interchain-security-container", "interchain-security-instance", 9090, 26657, 1317, 8545)
 	println("docker started?")
 
-	// cmd := exec.Command("docker", "ps")
-	// stdoutStderr, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%s\n", stdoutStderr)
-
 	start_chain("interchain-security-instance", "/testnet-scripts/start-chain/start-chain.sh", "interchain-securityd", 3, "provider", "7.7.7", 26657, 9090, ".app_state.gov.voting_params.voting_period = \"60s\"")
+	println("chain started?")
 
 	mnemonic1 := strings.Split(catFileInDocker("interchain-security-instance", "/provider/validator1/mnemonic"), "\n")[5]
 
 	println(mnemonic1)
+
+	bz, _ := exec.Command("interchain-securityd", "keys", "delete", "validator1", "-y").CombinedOutput()
+	fmt.Println(string(bz))
 
 	cmd := exec.Command("interchain-securityd", "keys", "add", "validator1", "--recover")
 	cmd.Stdin = strings.NewReader(mnemonic1 + "\npassword\npassword")
@@ -36,31 +33,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// exec.Command("interchain-securityd", "tx", "gov", "submit-proposal", `--title="Test Proposal"`, `--description="My awesome proposal"`, `--type="Text"`, `--deposit="10test"`, "--from")
+	bz, _ = exec.Command("interchain-securityd", "keys", "list").CombinedOutput()
 
-	// Pass gov prop
-	// Query IBC module for client state and consensus state????? <- NO but should be possible
-	// Instead, create client state:
-	// clientState = ibctmtypes.NewClientState(<provider chain id>, ibctmtypes.DefaultTrustLevel, <unbonding period- query provider staking params>, <half of the previous argument>,
-	// 		time.Second*10, <height at which the proposal passed on provider +-1>, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
-	// Then, create consensus state:
-	// ConsensusState = ibctmtypes.NewConsensusState(<time at which the proposal passed on provider +-1>, commitmenttypes.NewMerkleRoot(<AppHash from block header from when the proposal passed on the provider +-1>), <NextValidatorsHash from block header from when the proposal passed on the provider +-1>)
-	// Populate consumer genesis - set enabled to true
-	// start consumer chain
+	fmt.Println(string(bz))
 
-	// # /bin/bash "$DIR/start-chain/start-chain.sh" interchain-securityd 3 consumer 7.7.8 26757 9190 '.app_state.gov.voting_params.voting_period = "60s"'
+	// interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --dry-run
+	bz, _ = exec.Command("interchain-securityd", "tx", "gov", "submit-proposal", `--title="Test Proposal"`, `--description="My awesome proposal"`, `--type`, `Text`, `--deposit`, `10000000stake`, `--from`, `validator1`, `--chain-id`, `provider`).CombinedOutput()
 
-	// Set up relayer- Hermes may be best
-	// https://hermes.informal.systems/config.html
-	// - rpc endpoint
-	// - private keys of an address with money
-	// - probably mostly change id-key_name in config
-	// - Massive headache: off by one errors
-
-	println("chain started?")
+	fmt.Println(string(bz))
 
 	outChannel := make(chan string)
-	_ = <-outChannel
+	<-outChannel
 }
 
 func start_docker(container_name string, instance_name string, expose_ports ...uint) {
@@ -91,7 +74,7 @@ func start_docker(container_name string, instance_name string, expose_ports ...u
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("out: " + out)
+		fmt.Println("out: " + out)
 		if out == "beacon!!!!!!!!!!" {
 			return
 		}
