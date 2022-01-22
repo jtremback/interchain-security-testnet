@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -eux
+set -eux
 
 BIN=$1
 NODES=$2
@@ -32,6 +32,9 @@ ls /$CHAIN_ID/
 # the --home parameter on gaiad
 for i in $(seq 1 $NODES);
 do
+    # make the folders for this validator
+    mkdir -p /$CHAIN_ID/validator$i/config/
+    
     GAIA_HOME="--home /$CHAIN_ID/validator$i"
     ARGS="$GAIA_HOME --keyring-backend test"
 
@@ -42,7 +45,6 @@ do
 
     VALIDATOR_KEY=$($BIN keys show validator$i -a $ARGS)
     # move the genesis in
-    mkdir -p /$CHAIN_ID/validator$i/config/
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
     $BIN add-genesis-account $ARGS $VALIDATOR_KEY $ALLOCATION
 
