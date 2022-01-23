@@ -20,35 +20,28 @@ func main() {
 	println("docker started?")
 
 	start_chain("interchain-security-instance", "/testnet-scripts/start-chain/start-chain.sh", "interchain-securityd",
-		`["pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear", "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel", "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal"]`,
+		`[
+			"pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear", 
+			"glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel", 
+			"sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal"
+		]`,
 		"provider", "7.7.7", 26657, 9090, ".app_state.gov.voting_params.voting_period = \"60s\"")
+
 	println("chain started?")
 
-	// mnemonic1 := strings.Split(catFileInDocker("interchain-security-instance", "/provider/validator1/mnemonic"), "\n")[5]
+	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
+	bz, _ := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal",
+		`--title="Test Proposal"`,
+		`--description="My awesome proposal"`,
+		`--type`, `Text`,
+		`--deposit`, `10000000stake`,
+		`--from`, `validator1`,
+		`--chain-id`, `provider`,
+		`--home`, `/provider/validator1`,
+		`--keyring-backend`, `test`,
+	).CombinedOutput()
 
-	// println(mnemonic1)
-
-	// bz, _ := exec.Command("interchain-securityd", "keys", "delete", "validator1", "-y").CombinedOutput()
-	// fmt.Println(string(bz))
-
-	// cmd := exec.Command("interchain-securityd", "keys", "add", "validator1", "--recover")
-	// cmd.Stdin = strings.NewReader(mnemonic1 + "\npassword\npassword")
-	// bz, err := cmd.CombinedOutput()
-
-	// fmt.Println(string(bz))
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// bz, _ = exec.Command("interchain-securityd", "keys", "list").CombinedOutput()
-
-	// fmt.Println(string(bz))
-
-	// // interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --dry-run
-	// bz, _ = exec.Command("interchain-securityd", "tx", "gov", "submit-proposal", `--title="Test Proposal"`, `--description="My awesome proposal"`, `--type`, `Text`, `--deposit`, `10000000stake`, `--from`, `validator1`, `--chain-id`, `provider`).CombinedOutput()
-
-	// fmt.Println(string(bz))
+	fmt.Println(string(bz))
 
 	outChannel := make(chan string)
 	<-outChannel
