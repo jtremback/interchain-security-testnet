@@ -2,7 +2,7 @@
 # set -eux
 
 BIN=$1
-NODES=$2
+MNEMONICS=$2
 CHAIN_ID=$3
 
 # This is the first 3 fields of the IP addresses which will be used internally by the validators of this blockchain
@@ -14,6 +14,9 @@ CHAIN_IP_PREFIX=$4
 RPC_PORT=$5
 # Default: 9090
 GRPC_PORT=$6
+
+# Get number of nodes from length of mnemonics array
+NODES=$(jq '. | length' <<< "$MNEMONICS")
 
 for i in $(seq 1 $NODES);
 do
@@ -45,6 +48,5 @@ do
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC"
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
-    # $BIN $ARGS start &
 done
 echo "done!!!!!!!!"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -eux
+set -eux
 
 # the directory of this script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -7,8 +7,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # The gaiad binary
 BIN=$1
 
-# Number of nodes
-NODES=$2
+# Mnemonics with which to start nodes
+MNEMONICS=$2
 
 # The chain ID
 CHAIN_ID=$3
@@ -25,9 +25,9 @@ RPC_PORT=$5
 GRPC_PORT=$6
 
 # A transformation to apply to the genesis file, as a jq string
-GENESIS_TRANSFORMATION=$7
+GENESIS_TRANSFORM=$7
 
-/bin/bash "$DIR/setup-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORMATION"
-/bin/bash "$DIR/start-validators.sh" "$BIN" "$NODES" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$RPC_PORT" "$GRPC_PORT"
+/bin/bash "$DIR/setup-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORM"
+/bin/bash "$DIR/start-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$RPC_PORT" "$GRPC_PORT"
 
 read -p "Press Return to Close..."
