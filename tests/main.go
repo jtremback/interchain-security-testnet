@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"time"
 )
 
@@ -178,34 +177,12 @@ func start_chain(
 	for scanner.Scan() {
 		out := scanner.Text()
 		fmt.Println("start chain: " + out)
-		// if out == "done!!!!!!!!" {
-		// 	return
-		// }
+		if out == "done!!!!!!!!" {
+			return
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
-	}
-
-	println("polling for chain start")
-	for {
-		// docker exec interchain-security-instance interchain-securityd query block
-		bz, _ := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "block",
-			`--chain-id`, `provider`,
-			`--home`, `/provider/validator1`,
-		).CombinedOutput()
-
-		fmt.Println(string(bz))
-
-		match, err := regexp.Match(`{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}`, bz)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if !match {
-			return
-		}
-
-		time.Sleep(100 * time.Millisecond)
 	}
 }
 

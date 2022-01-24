@@ -49,4 +49,3 @@ do
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC"
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
 done
-echo "done!!!!!!!!"

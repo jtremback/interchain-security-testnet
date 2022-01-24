@@ -27,7 +27,16 @@ GRPC_PORT=$6
 # A transformation to apply to the genesis file, as a jq string
 GENESIS_TRANSFORM=$7
 
+# generate accounts and do genesis ceremony 
 /bin/bash "$DIR/setup-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORM"
 /bin/bash "$DIR/start-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$RPC_PORT" "$GRPC_PORT"
+
+# poll for chain start
+set +e
+interchain-securityd query block --home /provider/validator1 --chain-id provider
+until interchain-securityd query block --home /provider/validator1 --chain-id provider | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+set -e
+
+echo "done!!!!!!!!"
 
 read -p "Press Return to Close..."
