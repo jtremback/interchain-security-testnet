@@ -13,10 +13,10 @@ STAKE_AMOUNT=$7
 NODES=$(jq '. | length' <<< "$MNEMONICS")
 
 
-# first we start a genesis.json with validator 1
-# validator 1 will also collect the gentx's once gnerated
+# first we start a genesis.json with validator0
+# validator0 will also collect the gentx's once gnerated
 # todo add git hash to chain name
-jq -r ".[0]" <<< "$MNEMONICS" | $BIN init --home /$CHAIN_ID/validator1 --chain-id=$CHAIN_ID validator1 --recover > /dev/null
+jq -r ".[0]" <<< "$MNEMONICS" | $BIN init --home /$CHAIN_ID/validator0 --chain-id=$CHAIN_ID validator0 --recover > /dev/null
 
 
 ## Modify generated genesis.json to our liking by editing fields using jq
@@ -24,14 +24,14 @@ jq -r ".[0]" <<< "$MNEMONICS" | $BIN init --home /$CHAIN_ID/validator1 --chain-i
 ## testing the generated one with the default values provided by the module.
 
 # Apply transformations to genesis file
-jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator1/config/genesis.json > /$CHAIN_ID/edited-genesis.json
+jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator0/config/genesis.json > /$CHAIN_ID/edited-genesis.json
 
 mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 
 
 # Sets up an arbitrary number of validators on a single machine by manipulating
 # the --home parameter on gaiad
-for i in $(seq 1 $NODES);
+for i in $(seq 0 $(($NODES - 1)));
 do
     # make the folders for this validator
     mkdir -p /$CHAIN_ID/validator$i/config/
@@ -53,26 +53,26 @@ do
 done
 
 
-for i in $(seq 1 $NODES);
+for i in $(seq 0 $(($NODES - 1)));
 do
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
 
     $BIN gentx validator$i "$STAKE_AMOUNT" --home /$CHAIN_ID/validator$i --keyring-backend test --moniker validator$i --chain-id=$CHAIN_ID --ip $CHAIN_IP_PREFIX.$i
-    # obviously we don't need to copy validator1's gentx to itself
-    if [ $i -gt 1 ]; then
-        cp /$CHAIN_ID/validator$i/config/gentx/* /$CHAIN_ID/validator1/config/gentx/
+    # obviously we don't need to copy validator0's gentx to itself
+    if [ $i -gt 0 ]; then
+        cp /$CHAIN_ID/validator$i/config/gentx/* /$CHAIN_ID/validator0/config/gentx/
     fi
 done
 
 
 # make the final genesis.json
-$BIN collect-gentxs --home /$CHAIN_ID/validator1
+$BIN collect-gentxs --home /$CHAIN_ID/validator0
 
 # and copy it to the root 
-cp /$CHAIN_ID/validator1/config/genesis.json /$CHAIN_ID/genesis.json
+cp /$CHAIN_ID/validator0/config/genesis.json /$CHAIN_ID/genesis.json
 
 # put the now final genesis.json into the correct folders
-for i in $(seq 1 $NODES);
+for i in $(seq 1 $(($NODES - 1)));
 do
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
 done

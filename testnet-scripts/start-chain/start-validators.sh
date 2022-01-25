@@ -18,7 +18,7 @@ GRPC_PORT=$6
 # Get number of nodes from length of mnemonics array
 NODES=$(jq '. | length' <<< "$MNEMONICS")
 
-for i in $(seq 1 $NODES);
+for i in $(seq 0 $(($NODES - 1)));
 do
     # add this ip for loopback dialing
     ip addr add $CHAIN_IP_PREFIX.$i/32 dev eth0 || true # allowed to fail
