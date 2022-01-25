@@ -33,7 +33,6 @@ GENESIS_TRANSFORM=$7
 
 # poll for chain start
 set +e
-interchain-securityd query block --home /provider/validator1 --chain-id provider
 until interchain-securityd query block --home /provider/validator1 --chain-id provider | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
 set -e
 

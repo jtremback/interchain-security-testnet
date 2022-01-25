@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -eux
+set -eux
 
 BIN=$1
 MNEMONICS=$2
