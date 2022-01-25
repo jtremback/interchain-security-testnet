@@ -54,23 +54,23 @@ func DefautlSystemConfig() Config {
 		exposePorts:      []uint{9090, 26657, 9089, 26656},
 		startChainScript: "/testnet-scripts/start-chain/start-chain.sh",
 		validatorsKeys: []ValidatorKeys{
-			ValidatorKeys{
+			{
 				mnemonic: "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 			},
-			ValidatorKeys{
+			{
 				mnemonic: "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
 			},
-			ValidatorKeys{
+			{
 				mnemonic: "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
 			},
 		},
 		chainAttrs: []ChainAttrs{
-			ChainAttrs{
+			{
 				chainId:        "provider",
 				ipPrefix:       "7.7.7",
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"60s\"",
-				rpcPort:        9090,
-				grpcPort:       26657,
+				rpcPort:        26657,
+				grpcPort:       9090,
 			},
 		},
 	}
@@ -85,7 +85,7 @@ type System struct {
 	state  State
 }
 
-func main2() {
+func main() {
 	s := System{
 		config: DefautlSystemConfig(),
 	}
@@ -125,91 +125,6 @@ func main2() {
 	).CombinedOutput()
 
 	fmt.Println(string(bz))
-}
-
-func main() {
-	startDocker("interchain-security-container", "interchain-security-instance", 9090, 26657, 1317, 8545)
-	println("docker started?")
-
-	startChain("interchain-security-instance", "/testnet-scripts/start-chain/start-chain.sh", "interchain-securityd",
-		`[
-			"pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
-			"glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
-			"sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal"
-		]`,
-		"provider", "7.7.7", 26657, 9090, ".app_state.gov.voting_params.voting_period = \"60s\"")
-
-	println("chain started?")
-
-	// ms := 0
-	// for {
-	// 	println(fmt.Sprint(ms) + " MILLISECONDS ----------------------------------------------")
-
-	// 	bz, _ := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "bank", "balances",
-	// 		`cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm`,
-	// 		`--chain-id`, `provider`,
-	// 		`--home`, `/provider/validator1`,
-	// 	).CombinedOutput()
-	// 	fmt.Println(string(bz))
-
-	// 	// docker exec interchain-security-instance interchain-securityd query block
-	// 	bz, _ = exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "block",
-	// 		`--chain-id`, `provider`,
-	// 		`--home`, `/provider/validator1`,
-	// 	).CombinedOutput()
-	// 	// fmt.Println(string(bz) == `{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}`)
-	// 	fmt.Println(regexp.Match(`{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}`, bz))
-
-	// 	time.Sleep(100 * time.Millisecond)
-	// 	ms += 100
-	// }
-
-	// // docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
-	// bz, _ := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal",
-	// 	`--title="Test Proposal"`,
-	// 	`--description="My awesome proposal"`,
-	// 	`--type`, `Text`,
-	// 	`--deposit`, `10000000stake`,
-	// 	`--from`, `validator1`,
-	// 	`--chain-id`, `provider`,
-	// 	`--home`, `/provider/validator1`,
-	// 	`--keyring-backend`, `test`,
-	// ).CombinedOutput()
-
-	// fmt.Println(string(bz))
-
-	bz, _ := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "bank", "balances",
-		`cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm`,
-		`--chain-id`, `provider`,
-		`--home`, `/provider/validator1`,
-	).CombinedOutput()
-	fmt.Println(string(bz))
-
-	// docker exec interchain-security-instance interchain-securityd tx bank send cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la 1stake --home /provider/validator1 --keyring-backend test --chain-id provider -y
-	bz, _ = exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "bank", "send",
-		`cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm`,
-		`cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la`,
-		`1stake`,
-		`--chain-id`, `provider`,
-		`--home`, `/provider/validator1`,
-		`--keyring-backend`, `test`,
-		`-b`, `block`,
-		`-y`,
-	).CombinedOutput()
-
-	fmt.Println(string(bz))
-
-	// docker exec interchain-security-instance interchain-securityd query bank balances cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm --home /provider/validator1 --chain-id provider
-	bz, _ = exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "bank", "balances",
-		`cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm`,
-		`--chain-id`, `provider`,
-		`--home`, `/provider/validator1`,
-	).CombinedOutput()
-
-	fmt.Println(string(bz))
-
-	outChannel := make(chan string)
-	<-outChannel
 }
 
 func (s System) checkInvariants() {
@@ -287,7 +202,7 @@ func (s System) startChain(
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		fmt.Println("startChain: " + out)
+		// fmt.Println("startChain: " + out)
 		if out == "done!!!!!!!!" {
 			return
 		}
@@ -295,15 +210,4 @@ func (s System) startChain(
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func catFileInDocker(instance string, path string) string {
-	cmd := exec.Command("docker", "exec", instance, "cat", path)
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return string(bz)
 }
