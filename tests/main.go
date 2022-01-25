@@ -37,22 +37,26 @@ type ChainAttrs struct {
 // These values will not be altered during a typical test run
 // They are probably not part of the model
 type Config struct {
-	containerName    string
-	instanceName     string
-	binaryName       string
-	exposePorts      []uint
-	startChainScript string
-	validatorsKeys   []ValidatorKeys
-	chainAttrs       []ChainAttrs
+	containerName     string
+	instanceName      string
+	binaryName        string
+	exposePorts       []uint
+	startChainScript  string
+	initialAllocation string
+	stakeAmount       string
+	validatorsKeys    []ValidatorKeys
+	chainAttrs        []ChainAttrs
 }
 
 func DefautlSystemConfig() Config {
 	return Config{
-		containerName:    "interchain-security-container",
-		instanceName:     "interchain-security-instance",
-		binaryName:       "interchain-securityd",
-		exposePorts:      []uint{9090, 26657, 9089, 26656},
-		startChainScript: "/testnet-scripts/start-chain/start-chain.sh",
+		containerName:     "interchain-security-container",
+		instanceName:      "interchain-security-instance",
+		binaryName:        "interchain-securityd",
+		exposePorts:       []uint{9090, 26657, 9089, 26656},
+		startChainScript:  "/testnet-scripts/start-chain/start-chain.sh",
+		initialAllocation: "10000000000stake,10000000000footoken",
+		stakeAmount:       "500000000stake",
 		validatorsKeys: []ValidatorKeys{
 			{
 				mnemonic: "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
@@ -127,10 +131,6 @@ func main() {
 	fmt.Println(string(bz))
 }
 
-func (s System) checkInvariants() {
-
-}
-
 func (s System) startDocker() {
 	path, err := os.Getwd()
 	if err != nil {
@@ -186,7 +186,8 @@ func (s System) startChain(
 	}
 
 	cmd := exec.Command("docker", "exec", s.config.instanceName, "/bin/bash",
-		s.config.startChainScript, s.config.binaryName, string(mnz), c.chainId, c.ipPrefix, fmt.Sprint(c.rpcPort), fmt.Sprint(c.grpcPort), c.genesisChanges)
+		s.config.startChainScript, s.config.binaryName, string(mnz), c.chainId, c.ipPrefix,
+		fmt.Sprint(c.rpcPort), fmt.Sprint(c.grpcPort), c.genesisChanges, s.config.initialAllocation, s.config.stakeAmount)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {

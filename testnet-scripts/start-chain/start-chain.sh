@@ -27,8 +27,14 @@ GRPC_PORT=$6
 # A transformation to apply to the genesis file, as a jq string
 GENESIS_TRANSFORM=$7
 
+# How much coin to give each validator on start
+# Default: "10000000000stake,10000000000footoken"
+ALLOCATION=$8
+
+STAKE_AMOUNT=$9
+
 # generate accounts and do genesis ceremony 
-/bin/bash "$DIR/setup-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORM"
+/bin/bash "$DIR/setup-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$GENESIS_TRANSFORM" "$ALLOCATION" "$STAKE_AMOUNT"
 /bin/bash "$DIR/start-validators.sh" "$BIN" "$MNEMONICS" "$CHAIN_ID" "$CHAIN_IP_PREFIX" "$RPC_PORT" "$GRPC_PORT"
 
 # poll for chain start
