@@ -7,6 +7,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"reflect"
+
+	"github.com/tidwall/gjson"
 )
 
 // property erupt day common remind oblige chunk thumb jazz camera erupt reward divorce fit toy cargo traffic scrub begin gown recall video friend prosper
@@ -18,7 +21,7 @@ import (
 
 // Attributes that are unique to a validator. Allows us to map (part of) the set of uints to
 // a set of viable validators
-type ValidatorKeys struct {
+type ValidatorAttrs struct {
 	mnemonic   string
 	delAddress string
 	valAddress string
@@ -44,7 +47,7 @@ type Config struct {
 	startChainScript  string
 	initialAllocation string
 	stakeAmount       string
-	validatorsKeys    []ValidatorKeys
+	validatorAttrs    []ValidatorAttrs
 	chainAttrs        []ChainAttrs
 }
 
@@ -57,7 +60,7 @@ func DefautlSystemConfig() Config {
 		startChainScript:  "/testnet-scripts/start-chain/start-chain.sh",
 		initialAllocation: "10000000000stake,10000000000footoken",
 		stakeAmount:       "500000000stake",
-		validatorsKeys: []ValidatorKeys{
+		validatorAttrs: []ValidatorAttrs{
 			{
 				mnemonic: "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 			},
@@ -81,12 +84,67 @@ func DefautlSystemConfig() Config {
 }
 
 type State struct {
-	transferSent bool
+	chain0 ChainState
+	chain1 ChainState
+}
+
+type ChainState struct {
+	valBalances map[uint]uint
 }
 
 type System struct {
 	config Config
 	state  State
+}
+
+type StartChainAction struct {
+	chain      uint
+	validators []uint
+}
+
+type SendTokensAction struct {
+	chain  uint
+	from   uint
+	to     uint
+	amount uint
+}
+
+type Step struct {
+	action interface{}
+	state  State
+}
+
+var steps = []Step{
+	{
+		action: StartChainAction{
+			chain:      0,
+			validators: []uint{0, 1, 2},
+		},
+		state: State{
+			chain0: ChainState{
+				valBalances: map[uint]uint{
+					0: 9500000000,
+					1: 9500000000,
+				},
+			},
+		},
+	},
+	{
+		action: SendTokensAction{
+			chain:  0,
+			from:   0,
+			to:     1,
+			amount: 1,
+		},
+		state: State{
+			chain0: ChainState{
+				valBalances: map[uint]uint{
+					0: 9499999999,
+					1: 9500000001,
+				},
+			},
+		},
+	},
 }
 
 func main() {
@@ -104,6 +162,7 @@ func main() {
 		`cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm`,
 		`--chain-id`, `provider`,
 		`--home`, `/provider/validator1`,
+		`--output`, `json`,
 	).CombinedOutput()
 	fmt.Println(string(bz))
 
@@ -126,9 +185,72 @@ func main() {
 		`cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm`,
 		`--chain-id`, `provider`,
 		`--home`, `/provider/validator1`,
+		`--output`, `json`,
 	).CombinedOutput()
 
 	fmt.Println(string(bz))
+}
+
+func (s System) runStep(step Step) {
+	switch action := step.action.(type) {
+	case StartChainAction:
+		s.startChain(action.chain, action.validators)
+	case SendTokensAction:
+		s.sendTokens(action)
+	}
+
+	if !reflect.DeepEqual(s.state, s.getState()) {
+		log.Fatal(`actual state` + fmt.Sprint(s.getState()) + `not equal to model state` + fmt.Sprint(s.state))
+	}
+}
+
+func (s System) getState() State {
+	return State{
+		chain0: ChainState{
+			// TODO: build map from chain validators list
+			valBalances: map[uint]uint{
+				0: s.getBalance(0, 0),
+				1: s.getBalance(0, 1),
+				// TODO: deal with validator2
+			},
+		},
+		// TODO: deal with chain1
+	}
+}
+
+func (s System) sendTokens(action SendTokensAction) {
+	// docker exec interchain-security-instance interchain-securityd tx bank send cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la 1stake --home /provider/validator1 --keyring-backend test --chain-id provider -y
+	bz, _ := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "bank", "send",
+		s.config.validatorAttrs[action.from].delAddress,
+		s.config.validatorAttrs[action.to].delAddress,
+		fmt.Sprint(action.amount)+`stake`,
+		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	fmt.Println(string(bz))
+}
+
+func (s System) getBalance(chain uint, validator uint) uint {
+	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "bank", "balances",
+		s.config.validatorAttrs[validator].delAddress,
+		`--chain-id`, s.config.chainAttrs[chain].chainId,
+		`--home`, `/provider/validator`+fmt.Sprint(validator),
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(bz))
+
+	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
+	println("TRYING GJSON!!!!!!" + amount.String())
+
+	return uint(amount.Uint())
 }
 
 func (s System) startDocker() {
@@ -177,7 +299,7 @@ func (s System) startChain(
 	var mnemonics []string
 
 	for _, val := range validators {
-		mnemonics = append(mnemonics, s.config.validatorsKeys[val].mnemonic)
+		mnemonics = append(mnemonics, s.config.validatorAttrs[val].mnemonic)
 	}
 
 	mnz, err := json.Marshal(mnemonics)
