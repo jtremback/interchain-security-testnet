@@ -7,6 +7,14 @@ type State struct {
 
 type ChainState struct {
 	valBalances map[uint]uint
+	proposals   map[uint]TextProposal
+}
+
+type TextProposal struct {
+	title       string
+	description string
+	deposit     uint
+	from        uint
 }
 
 type StartChainAction struct {
@@ -19,6 +27,22 @@ type SendTokensAction struct {
 	from   uint
 	to     uint
 	amount uint
+}
+
+type SubmitGovProposalAction struct {
+	chain       uint
+	from        uint
+	deposit     uint
+	propType    string
+	title       string
+	description string
+}
+
+type VoteGovProposalAction struct {
+	chain      uint
+	from       uint
+	vote       string
+	propNumber uint
 }
 
 type Step struct {
@@ -53,6 +77,32 @@ var exampleSteps1 = []Step{
 				valBalances: map[uint]uint{
 					0: 9499999999,
 					1: 9500000001,
+				},
+			},
+		},
+	},
+	{
+		action: SubmitGovProposalAction{
+			chain:       0,
+			from:        0,
+			deposit:     1000000,
+			propType:    "Text",
+			title:       "Prop title",
+			description: "description",
+		},
+		state: State{
+			chain0: ChainState{
+				valBalances: map[uint]uint{
+					0: 9499999999,
+					1: 9500000001,
+				},
+				proposals: map[uint]TextProposal{
+					1: {
+						title:       "Prop title",
+						description: "description",
+						from:        0,
+						deposit:     1000000,
+					},
 				},
 			},
 		},

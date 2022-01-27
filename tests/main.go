@@ -27,9 +27,13 @@ func main() {
 func (s System) runStep(step Step) {
 	switch action := step.action.(type) {
 	case StartChainAction:
-		s.startChain(action.chain, action.validators)
+		s.startChain(action)
 	case SendTokensAction:
 		s.sendTokens(action)
+	case SubmitGovProposalAction:
+		s.submitGovProposal(action)
+	case VoteGovProposalAction:
+		s.voteGovProposal(action)
 	}
 
 	// Check state

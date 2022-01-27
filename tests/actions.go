@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-
-	"github.com/tidwall/gjson"
 )
 
 type System struct {
@@ -32,31 +30,13 @@ func (s System) sendTokens(action SendTokensAction) {
 	}
 }
 
-func (s System) getBalance(chain uint, validator uint) uint {
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "bank", "balances",
-		s.config.validatorAttrs[validator].delAddress,
-		`--chain-id`, s.config.chainAttrs[chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(validator),
-		`-o`, `json`,
-	).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
-
-	return uint(amount.Uint())
-}
-
 func (s System) startChain(
-	chain uint,
-	validators []uint,
+	action StartChainAction,
 ) {
-	c := s.config.chainAttrs[chain]
+	c := s.config.chainAttrs[action.chain]
 	var mnemonics []string
 
-	for _, val := range validators {
+	for _, val := range action.validators {
 		mnemonics = append(mnemonics, s.config.validatorAttrs[val].mnemonic)
 	}
 
@@ -90,5 +70,48 @@ func (s System) startChain(
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func (s System) submitGovProposal(
+	action SubmitGovProposalAction,
+) {
+	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
+	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal",
+		`--title`, action.title,
+		`--description`, action.description,
+		`--type`, action.propType,
+		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+func (s System) voteGovProposal(
+	action VoteGovProposalAction,
+) {
+	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
+	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "vote",
+		`vote`, fmt.Sprint(action.propNumber), action.vote,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
 	}
 }
