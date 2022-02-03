@@ -12,8 +12,8 @@ var exampleSteps1 = []Step{
 			validators: []uint{0, 1, 2},
 		},
 		state: State{
-			Chain0: ChainState{
-				ValBalances: map[uint]uint{
+			0: ChainState{
+				ValBalances: &map[uint]uint{
 					0: 9500000000,
 					1: 9500000000,
 				},
@@ -28,8 +28,8 @@ var exampleSteps1 = []Step{
 			amount: 1,
 		},
 		state: State{
-			Chain0: ChainState{
-				ValBalances: map[uint]uint{
+			0: ChainState{
+				ValBalances: &map[uint]uint{
 					0: 9499999999,
 					1: 9500000001,
 				},
@@ -46,16 +46,15 @@ var exampleSteps1 = []Step{
 			description: "description",
 		},
 		state: State{
-			Chain0: ChainState{
-				ValBalances: map[uint]uint{
-					0: 9499999999,
+			0: ChainState{
+				ValBalances: &map[uint]uint{
+					0: 9498999999,
 					1: 9500000001,
 				},
-				Proposals: map[uint]TextProposal{
+				Proposals: &map[uint]TextProposal{
 					1: {
 						Title:       "Prop title",
 						Description: "description",
-						From:        0,
 						Deposit:     1000000,
 					},
 				},

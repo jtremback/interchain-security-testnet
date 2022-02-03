@@ -4,39 +4,65 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"regexp"
 
 	"github.com/tidwall/gjson"
 )
 
-type State struct {
-	Chain0 ChainState
-	Chain1 ChainState
-}
+type State map[uint]ChainState
 
 type ChainState struct {
-	ValBalances map[uint]uint
-	Proposals   map[uint]TextProposal
+	ValBalances *map[uint]uint
+	Proposals   *map[uint]TextProposal
 }
 
 type TextProposal struct {
 	Title       string
 	Description string
 	Deposit     uint
-	From        uint
 }
 
-func (s System) getState() State {
-	return State{
-		Chain0: ChainState{
-			// TODO: build map from chain validators list
-			ValBalances: map[uint]uint{
-				0: s.getBalance(0, 0),
-				1: s.getBalance(0, 1),
-				// TODO: deal with validator2
-			},
-		},
-		// TODO: deal with chain1
+func (s System) getState(modelState State) State {
+	systemState := State{}
+	for k, modelState := range modelState {
+		systemState[k] = s.getChainState(modelState)
 	}
+
+	return systemState
+}
+
+func (s System) getChainState(modelState ChainState) ChainState {
+	chainState := ChainState{}
+
+	if modelState.ValBalances != nil {
+		valBalances := s.getBalances(0, *modelState.ValBalances)
+		chainState.ValBalances = &valBalances
+	}
+
+	if modelState.Proposals != nil {
+		proposals := s.getProposals(0, 0, *modelState.Proposals)
+		chainState.Proposals = &proposals
+	}
+
+	return chainState
+}
+
+func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint {
+	systemState := map[uint]uint{}
+	for k, _ := range modelState {
+		systemState[k] = s.getBalance(chain, k)
+	}
+
+	return systemState
+}
+
+func (s System) getProposals(chain uint, validator uint, modelState map[uint]TextProposal) map[uint]TextProposal {
+	systemState := map[uint]TextProposal{}
+	for k, _ := range modelState {
+		systemState[k] = s.getProposal(chain, validator, k)
+	}
+
+	return systemState
 }
 
 func (s System) getBalance(chain uint, validator uint) uint {
@@ -56,20 +82,35 @@ func (s System) getBalance(chain uint, validator uint) uint {
 	return uint(amount.Uint())
 }
 
+var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
+
 // interchain-securityd query gov proposals
-func (s System) getProposals(chain uint, validator uint) uint {
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "gov", "proposals",
-		s.config.validatorAttrs[validator].delAddress,
+func (s System) getProposal(chain uint, validator uint, proposal uint) TextProposal {
+	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "gov", "proposal",
+		fmt.Sprint(proposal),
 		`--chain-id`, s.config.chainAttrs[chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(validator),
 		`-o`, `json`,
 	).CombinedOutput()
 
+	prop := TextProposal{}
+	println(string(bz))
+
 	if err != nil {
+		if noProposalRegex.Match(bz) {
+			return prop
+		}
+
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
+	title := gjson.Get(string(bz), `content.title`).String()
+	description := gjson.Get(string(bz), `content.description`).String()
+	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
 
-	return uint(amount.Uint())
+	return TextProposal{
+		Title:       title,
+		Description: description,
+		Deposit:     uint(deposit),
+	}
 }

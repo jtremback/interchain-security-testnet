@@ -9,6 +9,7 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 require github.com/tidwall/gjson v1.6.7
 
 require (
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/tidwall/match v1.0.3 // indirect
 	github.com/tidwall/pretty v1.0.2 // indirect
 )

@@ -2,12 +2,13 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"reflect"
+
+	"github.com/kylelemons/godebug/pretty"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 }
 
 func (s System) runStep(step Step) {
+	fmt.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
 		s.startChain(action)
@@ -37,24 +39,15 @@ func (s System) runStep(step Step) {
 		s.voteGovProposal(action)
 	}
 
-	actualState := s.getState()
 	modelState := step.state
-
-	marshal := func(x interface{}) string {
-		bz, err := json.Marshal(x)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		return string(bz)
-	}
+	actualState := s.getState(step.state)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		log.Fatal(`actual state ` + marshal(actualState) + ` not equal to model state ` + marshal(modelState))
+		log.Fatal(`actual state not equal to model state: ` + pretty.Compare(actualState, modelState))
 	}
 
-	println(`actual state ` + marshal(actualState) + ` equal to model state ` + marshal(modelState))
+	pretty.Print(actualState)
 }
 
 func (s System) startDocker() {
