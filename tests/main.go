@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -36,26 +37,24 @@ func (s System) runStep(step Step) {
 		s.voteGovProposal(action)
 	}
 
+	actualState := s.getState()
+	modelState := step.state
+
+	marshal := func(x interface{}) string {
+		bz, err := json.Marshal(x)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return string(bz)
+	}
+
 	// Check state
-	if !reflect.DeepEqual(step.state, s.getState()) {
-		log.Fatal(`actual state ` + fmt.Sprint(s.getState()) + ` not equal to model state ` + fmt.Sprint(step.state))
+	if !reflect.DeepEqual(actualState, modelState) {
+		log.Fatal(`actual state ` + marshal(actualState) + ` not equal to model state ` + marshal(modelState))
 	}
 
-	// println(`actual state ` + fmt.Sprint(s.getState()) + ` equal to model state ` + fmt.Sprint(step.state))
-}
-
-func (s System) getState() State {
-	return State{
-		chain0: ChainState{
-			// TODO: build map from chain validators list
-			valBalances: map[uint]uint{
-				0: s.getBalance(0, 0),
-				1: s.getBalance(0, 1),
-				// TODO: deal with validator2
-			},
-		},
-		// TODO: deal with chain1
-	}
+	println(`actual state ` + marshal(actualState) + ` equal to model state ` + marshal(modelState))
 }
 
 func (s System) startDocker() {

@@ -12,6 +12,34 @@ type System struct {
 	config Config
 }
 
+type StartChainAction struct {
+	chain      uint
+	validators []uint
+}
+
+type SendTokensAction struct {
+	chain  uint
+	from   uint
+	to     uint
+	amount uint
+}
+
+type SubmitGovProposalAction struct {
+	chain       uint
+	from        uint
+	deposit     uint
+	propType    string
+	title       string
+	description string
+}
+
+type VoteGovProposalAction struct {
+	chain      uint
+	from       uint
+	vote       string
+	propNumber uint
+}
+
 func (s System) sendTokens(action SendTokensAction) {
 	// docker exec interchain-security-instance interchain-securityd tx bank send cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la 1stake --home /provider/validator1 --keyring-backend test --chain-id provider -y
 	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "bank", "send",
