@@ -33,8 +33,10 @@ func (s System) runStep(step Step) {
 		s.startChain(action)
 	case SendTokensAction:
 		s.sendTokens(action)
-	case SubmitGovProposalAction:
-		s.submitGovProposal(action)
+	case SubmitTextProposalAction:
+		s.submitTextProposal(action)
+	case SubmitConsumerProposalAction:
+		s.submitConsumerProposal(action)
 	case VoteGovProposalAction:
 		s.voteGovProposal(action)
 	}
@@ -44,7 +46,7 @@ func (s System) runStep(step Step) {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		log.Fatal(`actual state not equal to model state: ` + pretty.Compare(actualState, modelState))
+		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
 	}
 
 	pretty.Print(actualState)

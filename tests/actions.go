@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"time"
+
+	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
+	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 )
 
 type System struct {
@@ -24,13 +28,22 @@ type SendTokensAction struct {
 	amount uint
 }
 
-type SubmitGovProposalAction struct {
+type SubmitTextProposalAction struct {
 	chain       uint
 	from        uint
 	deposit     uint
 	propType    string
 	title       string
 	description string
+}
+
+type SubmitConsumerProposalAction struct {
+	chain         uint
+	from          uint
+	deposit       uint
+	chainId       string
+	spawnTime     time.Time
+	initialHeight clienttypes.Height
 }
 
 type VoteGovProposalAction struct {
@@ -101,8 +114,8 @@ func (s System) startChain(
 	}
 }
 
-func (s System) submitGovProposal(
-	action SubmitGovProposalAction,
+func (s System) submitTextProposal(
+	action SubmitTextProposalAction,
 ) {
 	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
 	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal",
@@ -110,6 +123,43 @@ func (s System) submitGovProposal(
 		`--description`, action.description,
 		`--type`, action.propType,
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+func (s System) submitConsumerProposal(
+	action SubmitConsumerProposalAction,
+) {
+	prop, err := types.NewCreateChildChainProposal("Create a chain", "Gonna be a great chain", action.chainId,
+		action.initialHeight, []byte("gen_hash"), []byte("bin_hash"), action.spawnTime)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO: cleanup file
+	bz, err = exec.Command("docker", "exec", "interchain-security-instance", "/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), "/temp-proposal.json")).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	bz, err = exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal", "create-child-chain",
+		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.config.chainAttrs[action.chain].chainId,

@@ -5,7 +5,9 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 )
 
@@ -13,14 +15,28 @@ type State map[uint]ChainState
 
 type ChainState struct {
 	ValBalances *map[uint]uint
-	Proposals   *map[uint]TextProposal
+	Proposals   *map[uint]Proposal
 }
 
+type Proposal interface {
+	isProposal()
+}
 type TextProposal struct {
 	Title       string
 	Description string
 	Deposit     uint
 }
+
+func (p TextProposal) isProposal() {}
+
+type ConsumerProposal struct {
+	Deposit       uint
+	ChainId       string
+	SpawnTime     time.Time
+	InitialHeight clienttypes.Height
+}
+
+func (p ConsumerProposal) isProposal() {}
 
 func (s System) getState(modelState State) State {
 	systemState := State{}
@@ -56,8 +72,8 @@ func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint 
 	return systemState
 }
 
-func (s System) getProposals(chain uint, validator uint, modelState map[uint]TextProposal) map[uint]TextProposal {
-	systemState := map[uint]TextProposal{}
+func (s System) getProposals(chain uint, validator uint, modelState map[uint]Proposal) map[uint]Proposal {
+	systemState := map[uint]Proposal{}
 	for k, _ := range modelState {
 		systemState[k] = s.getProposal(chain, validator, k)
 	}
