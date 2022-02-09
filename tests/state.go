@@ -110,7 +110,6 @@ func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal 
 	).CombinedOutput()
 
 	prop := TextProposal{}
-	println(string(bz))
 
 	if err != nil {
 		if noProposalRegex.Match(bz) {
