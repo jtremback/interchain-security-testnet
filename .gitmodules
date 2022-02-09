@@ -1,3 +1,6 @@
 [submodule "interchain-security"]
 	path = interchain-security
 	url = https://github.com/cosmos/interchain-security
+[submodule "cosmos-sdk"]
+	path = cosmos-sdk
+	url = https://github.com/cosmos/cosmos-sdk/

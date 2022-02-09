@@ -11,6 +11,8 @@ type Step struct {
 	state  State
 }
 
+var now = time.Now().UTC()
+
 var exampleSteps1 = []Step{
 	{
 		action: StartChainAction{
@@ -73,7 +75,7 @@ var exampleSteps1 = []Step{
 			from:          0,
 			deposit:       1000000,
 			chainId:       "consumer",
-			spawnTime:     time.Now(),
+			spawnTime:     now,
 			initialHeight: clienttypes.Height{0, 1},
 		},
 		state: State{
@@ -85,8 +87,8 @@ var exampleSteps1 = []Step{
 				Proposals: &map[uint]Proposal{
 					2: ConsumerProposal{
 						Deposit:       1000000,
-						ChainId:       "jonsumer",
-						SpawnTime:     time.Now(),
+						ChainId:       "consumer",
+						SpawnTime:     now,
 						InitialHeight: clienttypes.Height{0, 1},
 					},
 				},

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 )
 
 type System struct {
@@ -51,6 +50,18 @@ type VoteGovProposalAction struct {
 	from       uint
 	vote       string
 	propNumber uint
+}
+
+// TODO: import this directly from the module once it is merged
+type CreateChildChainProposalJSON struct {
+	Title         string             `json:"title"`
+	Description   string             `json:"description"`
+	ChainId       string             `json:"chain_id"`
+	InitialHeight clienttypes.Height `json:"initial_height"`
+	GenesisHash   []byte             `json:"genesis_hash"`
+	BinaryHash    []byte             `json:"binary_hash"`
+	SpawnTime     time.Time          `json:"spawn_time"`
+	Deposit       string             `json:"deposit"`
 }
 
 func (s System) sendTokens(action SendTokensAction) {
@@ -140,10 +151,15 @@ func (s System) submitTextProposal(
 func (s System) submitConsumerProposal(
 	action SubmitConsumerProposalAction,
 ) {
-	prop, err := types.NewCreateChildChainProposal("Create a chain", "Gonna be a great chain", action.chainId,
-		action.initialHeight, []byte("gen_hash"), []byte("bin_hash"), action.spawnTime)
-	if err != nil {
-		log.Fatal(err)
+	prop := CreateChildChainProposalJSON{
+		Title:         "Create a chain",
+		Description:   "Gonna be a great chain",
+		ChainId:       action.chainId,
+		InitialHeight: action.initialHeight,
+		GenesisHash:   []byte("gen_hash"),
+		BinaryHash:    []byte("bin_hash"),
+		SpawnTime:     action.spawnTime,
+		Deposit:       fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)

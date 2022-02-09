@@ -46,6 +46,8 @@ func (s System) runStep(step Step) {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
+		pretty.Print("\nactual state", actualState)
+		pretty.Print("\nmodel state\n", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
 	}
 

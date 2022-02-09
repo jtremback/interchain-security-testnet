@@ -101,7 +101,7 @@ func (s System) getBalance(chain uint, validator uint) uint {
 var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
-func (s System) getProposal(chain uint, validator uint, proposal uint) TextProposal {
+func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal {
 	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "gov", "proposal",
 		fmt.Sprint(proposal),
 		`--chain-id`, s.config.chainAttrs[chain].chainId,
@@ -120,13 +120,37 @@ func (s System) getProposal(chain uint, validator uint, proposal uint) TextPropo
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	title := gjson.Get(string(bz), `content.title`).String()
-	description := gjson.Get(string(bz), `content.description`).String()
-	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
+	propType := gjson.Get(string(bz), `content.@type`).String()
 
-	return TextProposal{
-		Title:       title,
-		Description: description,
-		Deposit:     uint(deposit),
+	switch propType {
+	case "/cosmos.gov.v1beta1.TextProposal":
+		title := gjson.Get(string(bz), `content.title`).String()
+		description := gjson.Get(string(bz), `content.description`).String()
+		deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
+
+		return TextProposal{
+			Title:       title,
+			Description: description,
+			Deposit:     uint(deposit),
+		}
+	case "/interchain_security.ccv.parent.v1.CreateChildChainProposal":
+		deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
+		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time()
+
+		return ConsumerProposal{
+			Deposit:   uint(deposit),
+			ChainId:   chainId,
+			SpawnTime: spawnTime.UTC(),
+			InitialHeight: clienttypes.Height{
+				RevisionNumber: gjson.Get(string(bz), `content.initial_height.revision_number`).Uint(),
+				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
+			},
+		}
+
 	}
+
+	log.Fatal("unknown proposal type", string(bz))
+
+	return nil
 }
