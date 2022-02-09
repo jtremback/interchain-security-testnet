@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"sync"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -47,8 +48,8 @@ type SubmitConsumerProposalAction struct {
 
 type VoteGovProposalAction struct {
 	chain      uint
-	from       uint
-	vote       string
+	from       []uint
+	vote       []string
 	propNumber uint
 }
 
@@ -193,19 +194,29 @@ func (s System) submitConsumerProposal(
 func (s System) voteGovProposal(
 	action VoteGovProposalAction,
 ) {
-	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "vote",
-		`vote`, fmt.Sprint(action.propNumber), action.vote,
+	var wg sync.WaitGroup
+	for i, val := range action.from {
+		wg.Add(1)
+		vote := action.vote[i]
+		go func(val uint, vote string) {
+			defer wg.Done()
+			bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "vote",
+				fmt.Sprint(action.propNumber), vote,
 
-		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--keyring-backend`, `test`,
-		`-b`, `block`,
-		`-y`,
-	).CombinedOutput()
+				`--from`, `validator`+fmt.Sprint(val),
+				`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+				`--home`, `/provider/validator`+fmt.Sprint(val),
+				`--keyring-backend`, `test`,
+				`-b`, `block`,
+				`-y`,
+			).CombinedOutput()
 
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+		}(val, vote)
 	}
+
+	wg.Wait()
+	time.Sleep(60 * time.Second)
 }

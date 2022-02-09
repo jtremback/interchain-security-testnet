@@ -25,6 +25,7 @@ type TextProposal struct {
 	Title       string
 	Description string
 	Deposit     uint
+	Status      string
 }
 
 func (p TextProposal) isProposal() {}
@@ -34,6 +35,7 @@ type ConsumerProposal struct {
 	ChainId       string
 	SpawnTime     time.Time
 	InitialHeight clienttypes.Height
+	Status        string
 }
 
 func (p ConsumerProposal) isProposal() {}
@@ -120,25 +122,27 @@ func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal 
 	}
 
 	propType := gjson.Get(string(bz), `content.@type`).String()
+	deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
+	status := gjson.Get(string(bz), `status`).String()
 
 	switch propType {
 	case "/cosmos.gov.v1beta1.TextProposal":
 		title := gjson.Get(string(bz), `content.title`).String()
 		description := gjson.Get(string(bz), `content.description`).String()
-		deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
 
 		return TextProposal{
+			Deposit:     uint(deposit),
+			Status:      status,
 			Title:       title,
 			Description: description,
-			Deposit:     uint(deposit),
 		}
 	case "/interchain_security.ccv.parent.v1.CreateChildChainProposal":
-		deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time()
 
 		return ConsumerProposal{
 			Deposit:   uint(deposit),
+			Status:    status,
 			ChainId:   chainId,
 			SpawnTime: spawnTime.UTC(),
 			InitialHeight: clienttypes.Height{
