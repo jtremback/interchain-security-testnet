@@ -12,10 +12,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 )
 
-type System struct {
-	config Config
-}
-
 type StartChainAction struct {
 	chain      uint
 	validators []uint
@@ -66,12 +62,14 @@ type CreateChildChainProposalJSON struct {
 }
 
 func (s System) sendTokens(action SendTokensAction) {
-	// docker exec interchain-security-instance interchain-securityd tx bank send cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la 1stake --home /provider/validator1 --keyring-backend test --chain-id provider -y
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "bank", "send",
-		s.config.validatorAttrs[action.from].delAddress,
-		s.config.validatorAttrs[action.to].delAddress,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"tx", "bank", "send",
+		s.validatorConfigs[action.from].delAddress,
+		s.validatorConfigs[action.to].delAddress,
 		fmt.Sprint(action.amount)+`stake`,
-		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -86,11 +84,11 @@ func (s System) sendTokens(action SendTokensAction) {
 func (s System) startChain(
 	action StartChainAction,
 ) {
-	c := s.config.chainAttrs[action.chain]
+	chainConfig := s.chainConfigs[action.chain]
 	var mnemonics []string
 
 	for _, val := range action.validators {
-		mnemonics = append(mnemonics, s.config.validatorAttrs[val].mnemonic)
+		mnemonics = append(mnemonics, s.validatorConfigs[val].mnemonic)
 	}
 
 	mnz, err := json.Marshal(mnemonics)
@@ -98,9 +96,9 @@ func (s System) startChain(
 		log.Fatal(err)
 	}
 
-	cmd := exec.Command("docker", "exec", s.config.instanceName, "/bin/bash",
-		s.config.startChainScript, s.config.binaryName, string(mnz), c.chainId, c.ipPrefix,
-		fmt.Sprint(c.rpcPort), fmt.Sprint(c.grpcPort), c.genesisChanges, s.config.initialAllocation, s.config.stakeAmount)
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
+		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(mnz), chainConfig.chainId, chainConfig.ipPrefix,
+		fmt.Sprint(chainConfig.rpcPort), fmt.Sprint(chainConfig.grpcPort), chainConfig.genesisChanges, chainConfig.initialAllocation, chainConfig.stakeAmount)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -130,14 +128,16 @@ func (s System) submitTextProposal(
 	action SubmitTextProposalAction,
 ) {
 	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal",
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"tx", "gov", "submit-proposal",
 		`--title`, action.title,
 		`--description`, action.description,
 		`--type`, action.propType,
 		`--deposit`, fmt.Sprint(action.deposit)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -169,17 +169,19 @@ func (s System) submitConsumerProposal(
 	}
 
 	// TODO: cleanup file
-	bz, err = exec.Command("docker", "exec", "interchain-security-instance", "/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), "/temp-proposal.json")).CombinedOutput()
+	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), "/temp-proposal.json")).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	bz, err = exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "submit-proposal", "create-child-chain",
+	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"tx", "gov", "submit-proposal", "create-child-chain",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
-		`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
@@ -200,11 +202,13 @@ func (s System) voteGovProposal(
 		vote := action.vote[i]
 		go func(val uint, vote string) {
 			defer wg.Done()
-			bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "tx", "gov", "vote",
+			bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+				"tx", "gov", "vote",
 				fmt.Sprint(action.propNumber), vote,
 
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, s.config.chainAttrs[action.chain].chainId,
+				`--chain-id`, s.chainConfigs[action.chain].chainId,
 				`--home`, `/provider/validator`+fmt.Sprint(val),
 				`--keyring-backend`, `test`,
 				`-b`, `block`,
@@ -218,5 +222,5 @@ func (s System) voteGovProposal(
 	}
 
 	wg.Wait()
-	time.Sleep(60 * time.Second)
+	time.Sleep(time.Duration(s.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }

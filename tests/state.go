@@ -84,9 +84,12 @@ func (s System) getProposals(chain uint, validator uint, modelState map[uint]Pro
 }
 
 func (s System) getBalance(chain uint, validator uint) uint {
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "bank", "balances",
-		s.config.validatorAttrs[validator].delAddress,
-		`--chain-id`, s.config.chainAttrs[chain].chainId,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"query", "bank", "balances",
+		s.validatorConfigs[validator].delAddress,
+
+		`--chain-id`, s.chainConfigs[chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(validator),
 		`-o`, `json`,
 	).CombinedOutput()
@@ -104,9 +107,12 @@ var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
 func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal {
-	bz, err := exec.Command("docker", "exec", "interchain-security-instance", "interchain-securityd", "query", "gov", "proposal",
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
-		`--chain-id`, s.config.chainAttrs[chain].chainId,
+
+		`--chain-id`, s.chainConfigs[chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(validator),
 		`-o`, `json`,
 	).CombinedOutput()

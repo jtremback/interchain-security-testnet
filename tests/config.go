@@ -9,7 +9,7 @@ package main
 
 // Attributes that are unique to a validator. Allows us to map (part of) the set of uints to
 // a set of viable validators
-type ValidatorAttrs struct {
+type ValidatorConfig struct {
 	mnemonic   string
 	delAddress string
 	valAddress string
@@ -17,38 +17,41 @@ type ValidatorAttrs struct {
 
 // Attributes that are unique to a chain. Allows us to map (part of) the set of uints to
 // a set of viable chains
-type ChainAttrs struct {
-	chainId        string
-	ipPrefix       string
-	genesisChanges string
-	rpcPort        uint
-	grpcPort       uint
+type ChainConfig struct {
+	chainId           string
+	ipPrefix          string
+	votingWaitTime    uint
+	genesisChanges    string
+	rpcPort           uint
+	grpcPort          uint
+	initialAllocation string
+	stakeAmount       string
+}
+
+type ContainerConfig struct {
+	containerName string
+	instanceName  string
+	binaryName    string
+	exposePorts   []uint
 }
 
 // These values will not be altered during a typical test run
 // They are probably not part of the model
-type Config struct {
-	containerName     string
-	instanceName      string
-	binaryName        string
-	exposePorts       []uint
-	startChainScript  string
-	initialAllocation string
-	stakeAmount       string
-	validatorAttrs    []ValidatorAttrs
-	chainAttrs        []ChainAttrs
+type System struct {
+	containerConfig  ContainerConfig
+	validatorConfigs []ValidatorConfig
+	chainConfigs     []ChainConfig
 }
 
-func DefautlSystemConfig() Config {
-	return Config{
-		containerName:     "interchain-security-container",
-		instanceName:      "interchain-security-instance",
-		binaryName:        "interchain-securityd",
-		exposePorts:       []uint{9090, 26657, 9089, 26656},
-		startChainScript:  "/testnet-scripts/start-chain/start-chain.sh",
-		initialAllocation: "10000000000stake,10000000000footoken",
-		stakeAmount:       "500000000stake",
-		validatorAttrs: []ValidatorAttrs{
+func DefaultSystemConfig() System {
+	return System{
+		containerConfig: ContainerConfig{
+			containerName: "interchain-security-container",
+			instanceName:  "interchain-security-instance",
+			binaryName:    "interchain-securityd",
+			exposePorts:   []uint{9090, 26657, 9089, 26656},
+		},
+		validatorConfigs: []ValidatorConfig{
 			{
 				mnemonic:   "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 				delAddress: "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
@@ -62,13 +65,16 @@ func DefautlSystemConfig() Config {
 				delAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 			},
 		},
-		chainAttrs: []ChainAttrs{
+		chainConfigs: []ChainConfig{
 			{
-				chainId:        "provider",
-				ipPrefix:       "7.7.7",
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"60s\"",
-				rpcPort:        26657,
-				grpcPort:       9090,
+				chainId:           "provider",
+				ipPrefix:          "7.7.7",
+				votingWaitTime:    10,
+				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"10s\"",
+				rpcPort:           26657,
+				grpcPort:          9090,
+				initialAllocation: "10000000000stake,10000000000footoken",
+				stakeAmount:       "500000000stake",
 			},
 		},
 	}

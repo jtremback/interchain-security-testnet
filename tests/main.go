@@ -12,9 +12,7 @@ import (
 )
 
 func main() {
-	s := System{
-		config: DefautlSystemConfig(),
-	}
+	s := DefaultSystemConfig()
 
 	s.startDocker()
 	// println("docker started?")
@@ -62,11 +60,11 @@ func (s System) startDocker() {
 
 	ports_string := ""
 
-	for _, port := range s.config.exposePorts {
+	for _, port := range s.containerConfig.exposePorts {
 		ports_string = ports_string + " -p " + fmt.Sprint(port) + ":" + fmt.Sprint(port)
 	}
 
-	cmd := exec.Command("/bin/bash", path+"/start-docker.sh", s.config.containerName, s.config.instanceName, ports_string)
+	cmd := exec.Command("/bin/bash", path+"/start-docker.sh", s.containerConfig.containerName, s.containerConfig.instanceName, ports_string)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
