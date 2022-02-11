@@ -33,6 +33,9 @@ mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 # the --home parameter on gaiad
 for i in $(seq 0 $(($NODES - 1)));
 do
+    # TODO: we need to pass in an identifier to identify the validator folder and other things instead of 
+    # using the index
+    
     # make the folders for this validator
     mkdir -p /$CHAIN_ID/validator$i/config/
     

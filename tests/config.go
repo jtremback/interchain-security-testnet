@@ -76,6 +76,16 @@ func DefaultSystemConfig() System {
 				initialAllocation: "10000000000stake,10000000000footoken",
 				stakeAmount:       "500000000stake",
 			},
+			{
+				chainId:           "consumer",
+				ipPrefix:          "7.7.8",
+				votingWaitTime:    10,
+				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"10s\"",
+				rpcPort:           26656,
+				grpcPort:          9089,
+				initialAllocation: "10000000000stake,10000000000footoken",
+				stakeAmount:       "500000000stake",
+			},
 		},
 	}
 }

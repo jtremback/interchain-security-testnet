@@ -17,6 +17,12 @@ type StartChainAction struct {
 	validators []uint
 }
 
+type StartConsumerChainAction struct {
+	chain         uint
+	providerChain uint
+	validators    []uint
+}
+
 type SendTokensAction struct {
 	chain  uint
 	from   uint
@@ -37,7 +43,7 @@ type SubmitConsumerProposalAction struct {
 	chain         uint
 	from          uint
 	deposit       uint
-	chainId       string
+	consumerChain uint
 	spawnTime     time.Time
 	initialHeight clienttypes.Height
 }
@@ -155,7 +161,7 @@ func (s System) submitConsumerProposal(
 	prop := CreateChildChainProposalJSON{
 		Title:         "Create a chain",
 		Description:   "Gonna be a great chain",
-		ChainId:       action.chainId,
+		ChainId:       s.chainConfigs[action.consumerChain].chainId,
 		InitialHeight: action.initialHeight,
 		GenesisHash:   []byte("gen_hash"),
 		BinaryHash:    []byte("bin_hash"),
@@ -223,4 +229,32 @@ func (s System) voteGovProposal(
 
 	wg.Wait()
 	time.Sleep(time.Duration(s.chainConfigs[action.chain].votingWaitTime) * time.Second)
+}
+
+func (s System) startConsumerChainAction(action StartConsumerChainAction) {
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"query", "parent", "child-genesis",
+		s.chainConfigs[action.chain].chainId,
+
+		`--chain-id`, s.chainConfigs[action.providerChain].chainId,
+		`--home`, s.getQueryValidatorHome(action.providerChain),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+}
+
+func (s System) getQueryValidatorHome(chain uint) string {
+	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	return `/` + s.chainConfigs[chain].chainId + `/` + string(bz)
 }

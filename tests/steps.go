@@ -91,7 +91,7 @@ var exampleSteps1 = []Step{
 			chain:         0,
 			from:          0,
 			deposit:       10000001,
-			chainId:       "consumer",
+			consumerChain: 1,
 			spawnTime:     now,
 			initialHeight: clienttypes.Height{0, 1},
 		},
@@ -104,7 +104,7 @@ var exampleSteps1 = []Step{
 				Proposals: &map[uint]Proposal{
 					1: ConsumerProposal{
 						Deposit:       10000001,
-						ChainId:       "consumer",
+						Chain:         1,
 						SpawnTime:     now,
 						InitialHeight: clienttypes.Height{0, 1},
 						Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
@@ -125,7 +125,7 @@ var exampleSteps1 = []Step{
 				Proposals: &map[uint]Proposal{
 					1: ConsumerProposal{
 						Deposit:       10000001,
-						ChainId:       "consumer",
+						Chain:         1,
 						SpawnTime:     now,
 						InitialHeight: clienttypes.Height{0, 1},
 						Status:        "PROPOSAL_STATUS_PASSED",

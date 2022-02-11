@@ -32,13 +32,16 @@ func (p TextProposal) isProposal() {}
 
 type ConsumerProposal struct {
 	Deposit       uint
-	ChainId       string
+	Chain         uint
 	SpawnTime     time.Time
 	InitialHeight clienttypes.Height
 	Status        string
 }
 
 func (p ConsumerProposal) isProposal() {}
+
+type ConsumerGenesis struct {
+}
 
 func (s System) getState(modelState State) State {
 	systemState := State{}
@@ -58,7 +61,7 @@ func (s System) getChainState(modelState ChainState) ChainState {
 	}
 
 	if modelState.Proposals != nil {
-		proposals := s.getProposals(0, 0, *modelState.Proposals)
+		proposals := s.getProposals(0, *modelState.Proposals)
 		chainState.Proposals = &proposals
 	}
 
@@ -74,10 +77,10 @@ func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint 
 	return systemState
 }
 
-func (s System) getProposals(chain uint, validator uint, modelState map[uint]Proposal) map[uint]Proposal {
+func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]Proposal {
 	systemState := map[uint]Proposal{}
 	for k, _ := range modelState {
-		systemState[k] = s.getProposal(chain, validator, k)
+		systemState[k] = s.getProposal(chain, k)
 	}
 
 	return systemState
@@ -90,7 +93,7 @@ func (s System) getBalance(chain uint, validator uint) uint {
 		s.validatorConfigs[validator].delAddress,
 
 		`--chain-id`, s.chainConfigs[chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(validator),
+		`--home`, s.getQueryValidatorHome(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -106,16 +109,18 @@ func (s System) getBalance(chain uint, validator uint) uint {
 var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
-func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal {
+func (s System) getProposal(chain uint, proposal uint) Proposal {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
 		`--chain-id`, s.chainConfigs[chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(validator),
+		`--home`, s.getQueryValidatorHome(chain),
 		`-o`, `json`,
 	).CombinedOutput()
+
+	//TODO: throw error for proposal not found
 
 	prop := TextProposal{}
 
@@ -146,10 +151,18 @@ func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal 
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time()
 
+		var chain uint
+		for i, conf := range s.chainConfigs {
+			if conf.chainId == chainId {
+				chain = uint(i)
+				break
+			}
+		}
+
 		return ConsumerProposal{
 			Deposit:   uint(deposit),
 			Status:    status,
-			ChainId:   chainId,
+			Chain:     chain,
 			SpawnTime: spawnTime.UTC(),
 			InitialHeight: clienttypes.Height{
 				RevisionNumber: gjson.Get(string(bz), `content.initial_height.revision_number`).Uint(),
@@ -163,3 +176,23 @@ func (s System) getProposal(chain uint, validator uint, proposal uint) Proposal 
 
 	return nil
 }
+
+// func (s System) getConsumerGenesis(chain uint, validator uint, consumerChainId string) uint {
+// 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+// 		"query", "parent", "child-genesis",
+// 		consumerChainId,
+
+// 		`--chain-id`, s.chainConfigs[chain].chainId,
+// 		`--home`, s.getQueryValidatorHome(chain),
+// 		`-o`, `json`,
+// 	).CombinedOutput()
+
+// 	if err != nil {
+// 		log.Fatal(err, "\n", string(bz))
+// 	}
+
+// 	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
+
+// 	return uint(amount.Uint())
+// }
