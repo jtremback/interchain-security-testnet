@@ -27,3 +27,9 @@
 	clientState.UnbondingPeriod = unbondingTime
 
 	gen.initialvalset = tm.validatorset -> utility func
+
+
+Things that are wrong with the 2 chain setup
+- Not using "node" argument to query correct node
+- Collision on pprof port
+- Need persistent peers arg in start command

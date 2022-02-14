@@ -24,28 +24,14 @@ do
     ip addr add $CHAIN_IP_PREFIX.$i/32 dev eth0 || true # allowed to fail
 
     GAIA_HOME="--home /$CHAIN_ID/validator$i"
-    # this implicitly caps us at ~6000 nodes for this sim
-    # note that we start on 26656 the idea here is that the first
-    # node (node 1) is at the expected contact address from the gentx
-    # faciliating automated peer exchange
-    if [[ "$i" -eq 1 ]]; then
-        # node one gets localhost so we can easily shunt these ports
-        # to the docker host
-        RPC_ADDRESS="--rpc.laddr tcp://0.0.0.0:$RPC_PORT"
-        GRPC_ADDRESS="--grpc.address 0.0.0.0:$GRPC_PORT"
-    else
-        # move these to another port and address, not becuase they will
-        # be used there, but instead to prevent them from causing problems
-        # you also can't duplicate the port selection against localhost
-        # for reasons that are not clear to me right now.
-        RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$i:26658"
-        GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$i:9091"
-    fi
+    RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$i:26658"
+    GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$i:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$i:26655"
     P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$i:26656"
     LOG_LEVEL="--log_level info"
     ENABLE_WEBGRPC="--grpc-web.enable=false"
+    PERSISTENT_PEERS="--p2p.persistent_peers $(paste -sd ',' <<< $(jq -r '.body.memo' /$CHAIN_ID/validator0/config/gentx/*))"
 
-    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC"
+    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
 done

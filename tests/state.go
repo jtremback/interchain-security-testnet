@@ -46,22 +46,23 @@ type ConsumerGenesis struct {
 func (s System) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {
-		systemState[k] = s.getChainState(modelState)
+		println("getting state for chain", k)
+		systemState[k] = s.getChainState(k, modelState)
 	}
 
 	return systemState
 }
 
-func (s System) getChainState(modelState ChainState) ChainState {
+func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
-		valBalances := s.getBalances(0, *modelState.ValBalances)
+		valBalances := s.getBalances(chain, *modelState.ValBalances)
 		chainState.ValBalances = &valBalances
 	}
 
 	if modelState.Proposals != nil {
-		proposals := s.getProposals(0, *modelState.Proposals)
+		proposals := s.getProposals(chain, *modelState.Proposals)
 		chainState.Proposals = &proposals
 	}
 
@@ -92,8 +93,7 @@ func (s System) getBalance(chain uint, validator uint) uint {
 		"query", "bank", "balances",
 		s.validatorConfigs[validator].delAddress,
 
-		`--chain-id`, s.chainConfigs[chain].chainId,
-		`--home`, s.getQueryValidatorHome(chain),
+		`--node`, "tcp://"+s.chainConfigs[chain].ipPrefix+".0:26658",
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -102,6 +102,10 @@ func (s System) getBalance(chain uint, validator uint) uint {
 	}
 
 	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
+	println("getting balance for chain, val", chain, validator)
+	println("amount", amount.Uint())
+	println("chainID", s.chainConfigs[chain].chainId)
+	println("queryValHome", s.getQueryValidatorHome(chain))
 
 	return uint(amount.Uint())
 }
@@ -115,8 +119,7 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--chain-id`, s.chainConfigs[chain].chainId,
-		`--home`, s.getQueryValidatorHome(chain),
+		`--node`, "tcp://"+s.chainConfigs[chain].ipPrefix+".0:26658",
 		`-o`, `json`,
 	).CombinedOutput()
 

@@ -13,12 +13,14 @@ import (
 )
 
 type StartChainAction struct {
-	chain      uint
-	validators []uint
+	chain          uint
+	validators     []uint
+	genesisChanges string
+	skipGentx      bool
 }
 
 type StartConsumerChainAction struct {
-	chain         uint
+	consumerChain uint
 	providerChain uint
 	validators    []uint
 }
@@ -76,7 +78,8 @@ func (s System) sendTokens(action SendTokensAction) {
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--home`, s.getTxValidatorHome(action.chain, action.from),
+		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -102,9 +105,17 @@ func (s System) startChain(
 		log.Fatal(err)
 	}
 
+	var genesisChanges string
+	if action.genesisChanges != "" {
+		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
+	} else {
+		genesisChanges = chainConfig.genesisChanges
+	}
+
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(mnz), chainConfig.chainId, chainConfig.ipPrefix,
-		fmt.Sprint(chainConfig.rpcPort), fmt.Sprint(chainConfig.grpcPort), chainConfig.genesisChanges, chainConfig.initialAllocation, chainConfig.stakeAmount)
+		fmt.Sprint(chainConfig.rpcPort), fmt.Sprint(chainConfig.grpcPort), genesisChanges,
+		chainConfig.initialAllocation, chainConfig.stakeAmount, fmt.Sprint(action.skipGentx))
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -120,7 +131,7 @@ func (s System) startChain(
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("startChain: " + out)
+		fmt.Println("startChain: " + out)
 		if out == "done!!!!!!!!" {
 			return
 		}
@@ -145,6 +156,7 @@ func (s System) submitTextProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -189,6 +201,7 @@ func (s System) submitConsumerProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
+		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -216,6 +229,7 @@ func (s System) voteGovProposal(
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, s.chainConfigs[action.chain].chainId,
 				`--home`, `/provider/validator`+fmt.Sprint(val),
+				`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
 				`--keyring-backend`, `test`,
 				`-b`, `block`,
 				`-y`,
@@ -231,14 +245,13 @@ func (s System) voteGovProposal(
 	time.Sleep(time.Duration(s.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
-func (s System) startConsumerChainAction(action StartConsumerChainAction) {
+func (s System) startConsumerChain(action StartConsumerChainAction) {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"query", "parent", "child-genesis",
-		s.chainConfigs[action.chain].chainId,
+		s.chainConfigs[action.consumerChain].chainId,
 
-		`--chain-id`, s.chainConfigs[action.providerChain].chainId,
-		`--home`, s.getQueryValidatorHome(action.providerChain),
+		`--node`, "tcp://"+s.chainConfigs[action.providerChain].ipPrefix+".0:26658",
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -246,6 +259,12 @@ func (s System) startConsumerChainAction(action StartConsumerChainAction) {
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	s.startChain(StartChainAction{
+		chain:          1,
+		validators:     action.validators,
+		genesisChanges: ".app_state.ccvchild = " + string(bz),
+		skipGentx:      true,
+	})
 }
 
 func (s System) getQueryValidatorHome(chain uint) string {
@@ -257,4 +276,8 @@ func (s System) getQueryValidatorHome(chain uint) string {
 	}
 
 	return `/` + s.chainConfigs[chain].chainId + `/` + string(bz)
+}
+
+func (s System) getTxValidatorHome(chain uint, validator uint) string {
+	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }

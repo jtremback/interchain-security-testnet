@@ -8,6 +8,7 @@ CHAIN_IP_PREFIX=$4
 GENESIS_TRANSFORM=$5
 ALLOCATION=$6
 STAKE_AMOUNT=$7
+SKIP_GENTX=$8
 
 # Get number of nodes from length of mnemonics array
 NODES=$(jq '. | length' <<< "$MNEMONICS")
@@ -61,15 +62,17 @@ do
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
 
     $BIN gentx validator$i "$STAKE_AMOUNT" --home /$CHAIN_ID/validator$i --keyring-backend test --moniker validator$i --chain-id=$CHAIN_ID --ip $CHAIN_IP_PREFIX.$i
+
     # obviously we don't need to copy validator0's gentx to itself
     if [ $i -gt 0 ]; then
         cp /$CHAIN_ID/validator$i/config/gentx/* /$CHAIN_ID/validator0/config/gentx/
     fi
 done
 
-
-# make the final genesis.json
-$BIN collect-gentxs --home /$CHAIN_ID/validator0
+if [ "$SKIP_GENTX" = "false" ] ; then 
+    # make the final genesis.json
+    $BIN collect-gentxs --home /$CHAIN_ID/validator0
+fi
 
 # and copy it to the root 
 cp /$CHAIN_ID/validator0/config/genesis.json /$CHAIN_ID/genesis.json

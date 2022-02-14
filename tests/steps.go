@@ -87,6 +87,22 @@ var exampleSteps1 = []Step{
 		},
 	},
 	{
+		action: SendTokensAction{
+			chain:  0,
+			from:   0,
+			to:     1,
+			amount: 2,
+		},
+		state: State{
+			0: ChainState{
+				ValBalances: &map[uint]uint{
+					0: 9499999998,
+					1: 9500000002,
+				},
+			},
+		},
+	},
+	{
 		action: SubmitConsumerProposalAction{
 			chain:         0,
 			from:          0,
@@ -98,8 +114,8 @@ var exampleSteps1 = []Step{
 		state: State{
 			0: ChainState{
 				ValBalances: &map[uint]uint{
-					0: 9489999999,
-					1: 9500000000,
+					0: 9489999997,
+					1: 9500000002,
 				},
 				Proposals: &map[uint]Proposal{
 					1: ConsumerProposal{
@@ -130,6 +146,47 @@ var exampleSteps1 = []Step{
 						InitialHeight: clienttypes.Height{0, 1},
 						Status:        "PROPOSAL_STATUS_PASSED",
 					},
+				},
+				ValBalances: &map[uint]uint{
+					0: 9499999998,
+					1: 9500000002,
+				},
+			},
+		},
+	},
+	{
+		action: StartConsumerChainAction{
+			consumerChain: 1,
+			providerChain: 0,
+			validators:    []uint{0, 1, 2},
+		},
+		state: State{
+			0: ChainState{
+				ValBalances: &map[uint]uint{
+					0: 9499999998,
+					1: 9500000002,
+				},
+			},
+			1: ChainState{
+				ValBalances: &map[uint]uint{
+					0: 9500000000,
+					1: 9500000000,
+				},
+			},
+		},
+	},
+	{
+		action: SendTokensAction{
+			chain:  1,
+			from:   0,
+			to:     1,
+			amount: 1,
+		},
+		state: State{
+			1: ChainState{
+				ValBalances: &map[uint]uint{
+					0: 9499999999,
+					1: 9500000001,
 				},
 			},
 		},

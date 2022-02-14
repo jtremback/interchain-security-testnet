@@ -37,6 +37,8 @@ func (s System) runStep(step Step) {
 		s.submitConsumerProposal(action)
 	case VoteGovProposalAction:
 		s.voteGovProposal(action)
+	case StartConsumerChainAction:
+		s.startConsumerChain(action)
 	}
 
 	modelState := step.state
@@ -80,7 +82,7 @@ func (s System) startDocker() {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("startDocker: " + out)
+		fmt.Println("startDocker: " + out)
 		if out == "beacon!!!!!!!!!!" {
 			return
 		}
