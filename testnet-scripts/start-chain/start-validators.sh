@@ -24,13 +24,21 @@ do
     ip addr add $CHAIN_IP_PREFIX.$i/32 dev eth0 || true # allowed to fail
 
     GAIA_HOME="--home /$CHAIN_ID/validator$i"
+
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$i:26658"
     GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$i:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$i:26655"
     P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$i:26656"
     LOG_LEVEL="--log_level info"
     ENABLE_WEBGRPC="--grpc-web.enable=false"
-    PERSISTENT_PEERS="--p2p.persistent_peers $(paste -sd ',' <<< $(jq -r '.body.memo' /$CHAIN_ID/validator0/config/gentx/*))"
+
+    # only add validator1 as persistent peer, and don't add it to itself since nodes seem to error when given themselves as persistent peers
+    PERSISTENT_PEERS=""
+    if [ $i -gt 0 ]; then
+        PERSISTENT_PEERS="--p2p.persistent_peers $(paste -sd ',' <<< $(jq -r '.body.memo' /$CHAIN_ID/validator0/config/gentx/*))"
+    fi
+
+    # SEED=$(paste -sd ',' <<< $(jq -r '.body.memo' /$CHAIN_ID/seed/config/gentx/*))
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
