@@ -134,22 +134,7 @@ do
     LOG_LEVEL="--log_level info"
     ENABLE_WEBGRPC="--grpc-web.enable=false"
 
-    PERSISTENT_PEERS=""
-
-    for j in $(seq 0 $(($NODES - 1)));
-    do
-        if [ $i -ne $j ]; then
-            NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$j)
-            ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$j:26656"
-            # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
-            PERSISTENT_PEERS="$PERSISTENT_PEERS,$ADDRESS"
-        fi
-    done
-
-    # Remove leading comma and concat to flag
-    PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
-
-    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
+    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC"
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
 done
 
