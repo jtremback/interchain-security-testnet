@@ -121,21 +121,6 @@ done
 
 # START VALIDATOR NODES
 
-# Set up seed node
-$BIN init --home /$CHAIN_ID/seed --chain-id=$CHAIN_ID seed
-cp /$CHAIN_ID/genesis.json /$CHAIN_ID/seed/config/genesis.json
-SEED_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/seed)
-ip addr add $CHAIN_IP_PREFIX.254/32 dev eth0 || true # allowed to fail
-$BIN start \
-    --home /$CHAIN_ID/seed \
-    --p2p.laddr tcp://$CHAIN_IP_PREFIX.254:26656 \
-    --rpc.laddr tcp://$CHAIN_IP_PREFIX.254:26658 \
-    --grpc.address $CHAIN_IP_PREFIX.254:9091 \
-    --address tcp://$CHAIN_IP_PREFIX.254:26655 \
-    --p2p.laddr tcp://$CHAIN_IP_PREFIX.254:26656 \
-    --grpc-web.enable=false \
-    &> /$CHAIN_ID/seed/logs &
-
 for i in $(seq 0 $(($NODES - 1)));
 do
     # add this ip for loopback dialing
@@ -149,7 +134,22 @@ do
     LOG_LEVEL="--log_level info"
     ENABLE_WEBGRPC="--grpc-web.enable=false"
 
-    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC --p2p.seeds $SEED_ID@$CHAIN_IP_PREFIX.254:26656"
+    PERSISTENT_PEERS=""
+
+    for j in $(seq 0 $(($NODES - 1)));
+    do
+        if [ $i -ne $j ]; then
+            NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$j)
+            ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$j:26656"
+            # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
+            PERSISTENT_PEERS="$PERSISTENT_PEERS,$ADDRESS"
+        fi
+    done
+
+    # Remove leading comma and concat to flag
+    PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
+
+    ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     $BIN $ARGS start &> /$CHAIN_ID/validator$i/logs &
 done
 
