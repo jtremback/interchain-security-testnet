@@ -117,16 +117,16 @@ done
 if [ "$SKIP_GENTX" = "false" ] ; then 
     # make the final genesis.json
     $BIN collect-gentxs --home /$CHAIN_ID/validator0
+
+    # and copy it to the root 
+    cp /$CHAIN_ID/validator0/config/genesis.json /$CHAIN_ID/genesis.json
+
+    # put the now final genesis.json into the correct folders
+    for i in $(seq 1 $(($NODES - 1)));
+    do
+        cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
+    done
 fi
-
-# and copy it to the root 
-cp /$CHAIN_ID/validator0/config/genesis.json /$CHAIN_ID/genesis.json
-
-# put the now final genesis.json into the correct folders
-for i in $(seq 1 $(($NODES - 1)));
-do
-    cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
-done
 
 
 
