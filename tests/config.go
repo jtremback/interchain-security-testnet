@@ -54,15 +54,15 @@ func DefaultSystemConfig() System {
 		validatorConfigs: []ValidatorConfig{
 			{
 				mnemonic:   "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
-				delAddress: "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm", //"cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
+				delAddress: "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 			},
 			{
 				mnemonic:   "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
-				delAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la", //"cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
+				delAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 			},
 			{
 				mnemonic:   "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
-				delAddress: "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u", //"cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
+				delAddress: "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
 			},
 		},
 		chainConfigs: []ChainConfig{
@@ -89,38 +89,3 @@ func DefaultSystemConfig() System {
 		},
 	}
 }
-
-// {
-// 	mnemonic:   "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
-// 	delAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la", //"cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
-// },
-// {
-// 	mnemonic:   "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
-// 	delAddress: "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u", //"cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
-// },
-// {
-// 	mnemonic:   "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
-// 	delAddress: "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm", //"cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
-// },
-
-// Working run (-1)
-// startChain: sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal
-// startChain:
-// startChain: validator0 keys:
-// startChain: - name: validator0
-// startChain:   address: cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u
-// startChain:   pubkey: '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Ao3lig9JxOHZXJG32wgfdzxcaGLcxlnWJYkYT8vftcfa"}'
-
-// startChain: pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear
-// startChain:
-// startChain: validator1 keys:
-// startChain: - name: validator1
-// startChain:   address: cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm
-// startChain:   pubkey: '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"AsFC8tmbGGQSHthsVStbsQ13/+Yza9IT8KCSXXEN7y9f"}'
-
-// startChain: glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel
-// startChain:
-// startChain: validator2 keys:
-// startChain: - name: validator2
-// startChain:   address: cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la
-// startChain:   pubkey: '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"ArCv6pseaIkP8SbRqnT4kKylCz5mgAyhwXp8V1q/zU3p"}'

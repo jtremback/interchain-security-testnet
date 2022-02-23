@@ -59,8 +59,6 @@ do
     # Generate an application key for each validator
     # Sets up an arbitrary number of validators on a single machine by manipulating
     # the --home parameter on gaiad
-    echo "NODE NUMMMMBBBBEBEBRBERBEBREBRBERER"
-    # echo $i
     jq -r ".[$i].mnemonic" <<< "$VALIDATORS"
 
     jq -r ".[$i].mnemonic" <<< "$VALIDATORS" | $BIN keys add validator$i \
@@ -68,10 +66,10 @@ do
         --keyring-backend test \
         --recover > /dev/null
     
-    echo "validator$i keys:"
-    $BIN keys show validator$i \
-        --home /$CHAIN_ID/validator$i \
-        --keyring-backend test \
+    # echo "validator$i keys:"
+    # $BIN keys show validator$i \
+    #     --home /$CHAIN_ID/validator$i \
+    #     --keyring-backend test \
     
     # Give validators their initial token allocations
     # move the genesis in
