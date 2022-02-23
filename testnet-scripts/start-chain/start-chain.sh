@@ -9,6 +9,7 @@ BIN=$1
 #     mnemonic: "crackle snap pop ... etc",
 #     allocation: "10000000000stake,10000000000footoken",
 #     stake: "5000000000stake",
+#     number: "0"
 # }, ... ]
 VALIDATORS=$2
 
@@ -34,11 +35,11 @@ COPY_KEYS=$7
 # CREATE VALIDATORS AND DO GENESIS CEREMONY
 
 # Get number of nodes from length of validators array
-NODES=$(jq '. | length' <<< "$VALIDATORS")
+NODES=$(echo "$VALIDATORS" | jq '. | length')
 
 # first we start a genesis.json with validator0
 # validator0 will also collect the gentx's once gnerated
-jq -r ".[0].mnemonic" <<< "$VALIDATORS" | $BIN init --home /$CHAIN_ID/validator0 --chain-id=$CHAIN_ID validator0 --recover > /dev/null
+echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator0 --chain-id=$CHAIN_ID validator0 --recover > /dev/null
 
 # Apply jq transformations to genesis file
 jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator0/config/genesis.json > /$CHAIN_ID/edited-genesis.json
@@ -59,9 +60,7 @@ do
     # Generate an application key for each validator
     # Sets up an arbitrary number of validators on a single machine by manipulating
     # the --home parameter on gaiad
-    jq -r ".[$i].mnemonic" <<< "$VALIDATORS"
-
-    jq -r ".[$i].mnemonic" <<< "$VALIDATORS" | $BIN keys add validator$i \
+    echo "$VALIDATORS" | jq -r ".[$i].mnemonic" | $BIN keys add validator$i \
         --home /$CHAIN_ID/validator$i \
         --keyring-backend test \
         --recover > /dev/null
@@ -76,7 +75,7 @@ do
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
     
     # give this validator some money
-    ALLOCATION=$(jq -r ".[$i].allocation" <<< "$VALIDATORS")
+    ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
     $BIN add-genesis-account validator$i $ALLOCATION \
         --home /$CHAIN_ID/validator$i \
         --keyring-backend test
@@ -94,7 +93,7 @@ do
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
 
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
-    STAKE_AMOUNT=$(jq -r ".[$i].stake" <<< "$VALIDATORS")
+    STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
     $BIN gentx validator$i "$STAKE_AMOUNT" \
         --home /$CHAIN_ID/validator$i \
         --keyring-backend test \
