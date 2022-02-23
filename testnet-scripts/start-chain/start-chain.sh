@@ -1,14 +1,16 @@
 #!/bin/bash
 set -eu
 
-# the directory of this script
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # The gaiad binary
 BIN=$1
 
-# Mnemonics with which to start nodes
-MNEMONICS=$2
+# JSON array of validator information
+# [{
+#     mnemonic: "crackle snap pop ... etc",
+#     allocation: "10000000000stake,10000000000footoken",
+#     stake: "5000000000stake",
+# }, ... ]
+VALIDATORS=$2
 
 # The chain ID
 CHAIN_ID=$3
@@ -18,45 +20,34 @@ CHAIN_ID=$3
 # For example: "7.7.7"
 CHAIN_IP_PREFIX=$4
 
-# Default: 26657
-RPC_PORT=$5
-
-# Default: 9090
-GRPC_PORT=$6
-
 # A transformation to apply to the genesis file, as a jq string
-GENESIS_TRANSFORM=$7
-
-# How much coin to give each validator on start
-# Default: "10000000000stake,10000000000footoken"
-ALLOCATION=$8
-
-# Amount for each validator to stake
-STAKE_AMOUNT=$9
+GENESIS_TRANSFORM=$5
 
 # Whether to skip collecting gentxs so that the genesis does not have them
-SKIP_GENTX=${10}
+SKIP_GENTX=$6
 
 # Whether to copy in validator configs from somewhere else
-COPY_CONFIGS=${11}
+COPY_KEYS=$7
 
 
-# CREATE VALDIATORS AND DO GENESIS CEREMONY
 
-# Get number of nodes from length of mnemonics array
-NODES=$(jq '. | length' <<< "$MNEMONICS")
+# CREATE VALIDATORS AND DO GENESIS CEREMONY
+
+# Get number of nodes from length of validators array
+NODES=$(jq '. | length' <<< "$VALIDATORS")
 
 # first we start a genesis.json with validator0
 # validator0 will also collect the gentx's once gnerated
-jq -r ".[0]" <<< "$MNEMONICS" | $BIN init --home /$CHAIN_ID/validator0 --chain-id=$CHAIN_ID validator0 --recover > /dev/null
+jq -r ".[0].mnemonic" <<< "$VALIDATORS" | $BIN init --home /$CHAIN_ID/validator0 --chain-id=$CHAIN_ID validator0 --recover > /dev/null
 
 # Apply jq transformations to genesis file
 jq "$GENESIS_TRANSFORM" /$CHAIN_ID/validator0/config/genesis.json > /$CHAIN_ID/edited-genesis.json
 mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 
 
-# Sets up an arbitrary number of validators on a single machine by manipulating
-# the --home parameter on gaiad
+
+# CREATE VALIDATOR HOME FOLDERS ETC
+
 for i in $(seq 0 $(($NODES - 1)));
 do
     # TODO: we need to pass in an identifier to identify the validator folder and other things instead of 
@@ -66,18 +57,32 @@ do
     mkdir -p /$CHAIN_ID/validator$i/config/
 
     # Generate an application key for each validator
-    jq -r ".[$((i-1))]" <<< "$MNEMONICS" | $BIN keys add validator$i \
+    # Sets up an arbitrary number of validators on a single machine by manipulating
+    # the --home parameter on gaiad
+    echo "NODE NUMMMMBBBBEBEBRBERBEBREBRBERER"
+    # echo $i
+    jq -r ".[$i].mnemonic" <<< "$VALIDATORS"
+
+    jq -r ".[$i].mnemonic" <<< "$VALIDATORS" | $BIN keys add validator$i \
         --home /$CHAIN_ID/validator$i \
         --keyring-backend test \
         --recover > /dev/null
-
+    
+    echo "validator$i keys:"
+    $BIN keys show validator$i \
+        --home /$CHAIN_ID/validator$i \
+        --keyring-backend test \
+    
     # Give validators their initial token allocations
     # move the genesis in
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
-    # give this validator some money 
+    
+    # give this validator some money
+    ALLOCATION=$(jq -r ".[$i].allocation" <<< "$VALIDATORS")
     $BIN add-genesis-account validator$i $ALLOCATION \
         --home /$CHAIN_ID/validator$i \
         --keyring-backend test
+
     # move the genesis back out
     mv /$CHAIN_ID/validator$i/config/genesis.json /$CHAIN_ID/genesis.json
 done
@@ -91,6 +96,7 @@ do
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$i/config/genesis.json
 
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
+    STAKE_AMOUNT=$(jq -r ".[$i].stake" <<< "$VALIDATORS")
     $BIN gentx validator$i "$STAKE_AMOUNT" \
         --home /$CHAIN_ID/validator$i \
         --keyring-backend test \
@@ -105,14 +111,19 @@ do
     fi
 
     # Copy in keys from another chain. This is used to start a consumer chain
-    if [ "$COPY_CONFIGS" != "" ] ; then 
-        cp /$COPY_CONFIGS/validator$i/config/priv_validator_key.json /$CHAIN_ID/validator$i/config/
-        cp /$COPY_CONFIGS/validator$i/config/node_key.json /$CHAIN_ID/validator$i/config/
+    if [ "$COPY_KEYS" != "" ] ; then 
+        cp /$COPY_KEYS/validator$i/config/priv_validator_key.json /$CHAIN_ID/validator$i/config/
+        cp /$COPY_KEYS/validator$i/config/node_key.json /$CHAIN_ID/validator$i/config/
     fi
 done
 
 # echo "AFTER GENTXS"
 # find /$CHAIN_ID/ -print
+
+
+
+
+# COLLECT GENTXS IF WE ARE STARTING A NEW CHAIN
 
 if [ "$SKIP_GENTX" = "false" ] ; then 
     # make the final genesis.json

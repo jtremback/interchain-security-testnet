@@ -71,6 +71,7 @@ type CreateChildChainProposalJSON struct {
 }
 
 func (s System) sendTokens(action SendTokensAction) {
+	println("FROM ADDRESS", action.from, s.validatorConfigs[action.from].delAddress)
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"tx", "bank", "send",
@@ -95,13 +96,22 @@ func (s System) startChain(
 	action StartChainAction,
 ) {
 	chainConfig := s.chainConfigs[action.chain]
-	var mnemonics []string
-
-	for _, val := range action.validators {
-		mnemonics = append(mnemonics, s.validatorConfigs[val].mnemonic)
+	type jsonValAttrs struct {
+		Mnemonic   string `json:"mnemonic"`
+		Allocation string `json:"allocation"`
+		Stake      string `json:"stake"`
 	}
 
-	mnz, err := json.Marshal(mnemonics)
+	var validators []jsonValAttrs
+	for _, val := range action.validators {
+		validators = append(validators, jsonValAttrs{
+			Mnemonic:   s.validatorConfigs[val].mnemonic,
+			Allocation: chainConfig.initialAllocation,
+			Stake:      chainConfig.stakeAmount,
+		})
+	}
+
+	vals, err := json.Marshal(validators)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,9 +124,9 @@ func (s System) startChain(
 	}
 
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(mnz), chainConfig.chainId, chainConfig.ipPrefix,
-		fmt.Sprint(chainConfig.rpcPort), fmt.Sprint(chainConfig.grpcPort), genesisChanges,
-		chainConfig.initialAllocation, chainConfig.stakeAmount, fmt.Sprint(action.skipGentx), action.copyConfigs)
+		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(vals),
+		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
+		fmt.Sprint(action.skipGentx), action.copyConfigs)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
