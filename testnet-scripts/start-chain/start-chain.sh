@@ -48,6 +48,7 @@ mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 
 
 
+
 # CREATE VALIDATOR HOME FOLDERS ETC
 
 for i in $(seq 0 $(($NODES - 1)));
@@ -64,11 +65,6 @@ do
         --keyring-backend test \
         --recover > /dev/null
     
-    # echo "validator$i keys:"
-    # $BIN keys show validator$i \
-    #     --home /$CHAIN_ID/validator$i \
-    #     --keyring-backend test \
-    
     # Give validators their initial token allocations
     # move the genesis in
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
@@ -83,8 +79,9 @@ do
     mv /$CHAIN_ID/validator$VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
 done
 
-# echo "BEFORE GENTXS"
-# find /$CHAIN_ID/ -print
+
+
+# MAKE GENTXS AND SET UP LOCAL VALIDATOR STATE
 
 for i in $(seq 0 $(($NODES - 1)));
 do
@@ -113,9 +110,6 @@ do
         cp /$COPY_KEYS/validator$VAL_ID/config/node_key.json /$CHAIN_ID/validator$VAL_ID/config/
     fi
 done
-
-# echo "AFTER GENTXS"
-# find /$CHAIN_ID/ -print
 
 
 
