@@ -100,6 +100,7 @@ func (s System) startChain(
 		Mnemonic   string `json:"mnemonic"`
 		Allocation string `json:"allocation"`
 		Stake      string `json:"stake"`
+		Number     string `json:"number"`
 	}
 
 	var validators []jsonValAttrs
@@ -108,6 +109,7 @@ func (s System) startChain(
 			Mnemonic:   s.validatorConfigs[val].mnemonic,
 			Allocation: chainConfig.initialAllocation,
 			Stake:      chainConfig.stakeAmount,
+			Number:     fmt.Sprint(val),
 		})
 	}
 

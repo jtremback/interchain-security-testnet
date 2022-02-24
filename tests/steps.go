@@ -75,7 +75,7 @@ var exampleSteps1 = []Step{
 	{
 		action: StartChainAction{
 			chain:      0,
-			validators: []uint{0, 1, 2},
+			validators: []uint{1, 0, 2},
 		},
 		state: State{
 			0: ChainState{
@@ -158,7 +158,7 @@ var exampleSteps1 = []Step{
 		action: StartConsumerChainAction{
 			consumerChain: 1,
 			providerChain: 0,
-			validators:    []uint{0, 1, 2},
+			validators:    []uint{2, 1, 0},
 		},
 		state: State{
 			0: ChainState{
