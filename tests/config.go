@@ -54,15 +54,15 @@ func DefaultSystemConfig() System {
 		validatorConfigs: []ValidatorConfig{
 			{
 				mnemonic:   "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
-				delAddress: "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
-			},
-			{
-				mnemonic:   "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
 				delAddress: "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 			},
 			{
-				mnemonic:   "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
+				mnemonic:   "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
 				delAddress: "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
+			},
+			{
+				mnemonic:   "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
+				delAddress: "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
 			},
 		},
 		chainConfigs: []ChainConfig{
