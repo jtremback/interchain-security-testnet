@@ -169,8 +169,8 @@ var exampleSteps1 = []Step{
 			},
 			1: ChainState{
 				ValBalances: &map[uint]uint{
-					0: 9500000000,
-					1: 9500000000,
+					0: 10000000000,
+					1: 10000000000,
 				},
 			},
 		},
@@ -185,8 +185,8 @@ var exampleSteps1 = []Step{
 		state: State{
 			1: ChainState{
 				ValBalances: &map[uint]uint{
-					0: 9499999999,
-					1: 9500000001,
+					0: 9999999999,
+					1: 10000000001,
 				},
 			},
 		},
