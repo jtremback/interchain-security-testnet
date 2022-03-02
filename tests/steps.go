@@ -191,4 +191,18 @@ var exampleSteps1 = []Step{
 			},
 		},
 	},
+	// {
+	// 	action: AddChainToRelayerAction{
+	// 		chain:     0,
+	// 		validator: 0,
+	// 	},
+	// 	state: State{},
+	// },
+	// {
+	// 	action: AddChainToRelayerAction{
+	// 		chain:     1,
+	// 		validator: 0,
+	// 	},
+	// 	state: State{},
+	// },
 }

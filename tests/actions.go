@@ -71,7 +71,6 @@ type CreateChildChainProposalJSON struct {
 }
 
 func (s System) sendTokens(action SendTokensAction) {
-	println("FROM ADDRESS", action.from, s.validatorConfigs[action.from].delAddress)
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"tx", "bank", "send",
@@ -144,14 +143,19 @@ func (s System) startChain(
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		fmt.Println("startChain: " + out)
+		// fmt.Println("startChain: " + out)
 		if out == "done!!!!!!!!" {
-			return
+			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	s.addChainToRelayer(AddChainToRelayerAction{
+		chain:     action.chain,
+		validator: action.validators[0],
+	})
 }
 
 func (s System) submitTextProposal(
@@ -279,6 +283,112 @@ func (s System) startConsumerChain(action StartConsumerChainAction) {
 		skipGentx:      true,
 		copyConfigs:    s.chainConfigs[action.providerChain].chainId,
 	})
+}
+
+type AddChainToRelayerAction struct {
+	chain     uint
+	validator uint
+}
+
+const hermesChainConfigTemplate = `
+
+[[chains]]
+account_prefix = "cosmos"
+clock_drift = "5s"
+gas_adjustment = 0.1
+grpc_addr = "%s"
+id = "%s"
+key_name = "%s"
+max_gas = 2000000
+rpc_addr = "%s"
+rpc_timeout = "10s"
+store_prefix = "ibc"
+trusting_period = "14days"
+websocket_addr = "%s"
+
+[chains.gas_price]
+	denom = "stake"
+	price = 0.001
+
+[chains.trust_threshold]
+	denominator = "3"
+	numerator = "1"
+`
+
+func (s System) addChainToRelayer(action AddChainToRelayerAction) {
+	valIp := s.chainConfigs[action.chain].ipPrefix + `.` + fmt.Sprint(action.validator)
+	chainId := s.chainConfigs[action.chain].chainId
+	keyName := "validator" + fmt.Sprint(action.validator)
+	grpcAddr := "tcp://" + valIp + ":26658"
+	rpcAddr := "tcp://" + valIp + ":9091"
+	wsAddr := "ws://" + valIp + ":26657/websocket"
+
+	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
+		grpcAddr,
+		chainId,
+		keyName,
+		rpcAddr,
+		wsAddr,
+	)
+
+	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
+
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
+		bashCommand,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+		"keys", "restore",
+		"--mnemonic", s.validatorConfigs[action.validator].mnemonic,
+		s.chainConfigs[action.chain].chainId,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type AddIbcChannelAction struct {
+	chainA uint
+	chainB uint
+	portA  string
+	portB  string
+	order  string
+}
+
+func (s System) addIbcChannel(action AddIbcChannelAction) {
+	// hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+		"create", "channel",
+		s.chainConfigs[action.chainA].chainId, s.chainConfigs[action.chainB].chainId,
+		"--port-a", action.portA,
+		"--port-b", action.portB,
+		"-o", action.order,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type RelayPacketsAction struct {
+	chain     uint
+	port      string
+	channelId string
+}
+
+func (s System) relayPackets(action RelayPacketsAction) {
+	// hermes clear packets ibc0 transfer channel-13
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "$HOME/.cargo/bin/hermes", "clear", "packets",
+		s.chainConfigs[action.chain].chainId, action.port, action.channelId,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
 }
 
 func (s System) getQueryValidatorHome(chain uint) string {

@@ -39,6 +39,12 @@ func (s System) runStep(step Step) {
 		s.voteGovProposal(action)
 	case StartConsumerChainAction:
 		s.startConsumerChain(action)
+	case AddChainToRelayerAction:
+		s.addChainToRelayer(action)
+	case AddIbcChannelAction:
+		s.addIbcChannel(action)
+	case RelayPacketsAction:
+		s.relayPackets(action)
 	}
 
 	modelState := step.state
@@ -82,7 +88,7 @@ func (s System) startDocker() {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		fmt.Println("startDocker: " + out)
+		// fmt.Println("startDocker: " + out)
 		if out == "beacon!!!!!!!!!!" {
 			return
 		}

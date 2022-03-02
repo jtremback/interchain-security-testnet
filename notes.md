@@ -33,3 +33,21 @@ Things that are wrong with the 2 chain setup
 - Not using "node" argument to query correct node
 - Collision on pprof port
 - Need persistent peers arg in start command
+
+# magically faster
+skip_timeout_commit = true
+
+or 
+
+timeout_commit = "10ms" # or something else short
+
+might work or might not
+
+peer_gossip_sleep_duration = "10ms" or lower
+
+this one is probably good to make faster
+
+flush_throttle_timeout = "10ms" or lower
+
+
+

@@ -46,7 +46,6 @@ type ConsumerGenesis struct {
 func (s System) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {
-		println("getting state for chain", k)
 		systemState[k] = s.getChainState(k, modelState)
 	}
 
@@ -102,10 +101,6 @@ func (s System) getBalance(chain uint, validator uint) uint {
 	}
 
 	amount := gjson.Get(string(bz), `balances.#(denom=="stake").amount`)
-	println("getting balance for chain, val", chain, validator)
-	println("amount", amount.Uint())
-	println("chainID", s.chainConfigs[chain].chainId)
-	println("queryValHome", s.getQueryValidatorHome(chain))
 
 	return uint(amount.Uint())
 }
