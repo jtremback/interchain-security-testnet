@@ -12,62 +12,11 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 )
 
-type StartChainAction struct {
-	chain          uint
-	validators     []uint
-	genesisChanges string
-	skipGentx      bool
-	copyConfigs    string
-}
-
-type StartConsumerChainAction struct {
-	consumerChain uint
-	providerChain uint
-	validators    []uint
-}
-
 type SendTokensAction struct {
 	chain  uint
 	from   uint
 	to     uint
 	amount uint
-}
-
-type SubmitTextProposalAction struct {
-	chain       uint
-	from        uint
-	deposit     uint
-	propType    string
-	title       string
-	description string
-}
-
-type SubmitConsumerProposalAction struct {
-	chain         uint
-	from          uint
-	deposit       uint
-	consumerChain uint
-	spawnTime     time.Time
-	initialHeight clienttypes.Height
-}
-
-type VoteGovProposalAction struct {
-	chain      uint
-	from       []uint
-	vote       []string
-	propNumber uint
-}
-
-// TODO: import this directly from the module once it is merged
-type CreateChildChainProposalJSON struct {
-	Title         string             `json:"title"`
-	Description   string             `json:"description"`
-	ChainId       string             `json:"chain_id"`
-	InitialHeight clienttypes.Height `json:"initial_height"`
-	GenesisHash   []byte             `json:"genesis_hash"`
-	BinaryHash    []byte             `json:"binary_hash"`
-	SpawnTime     time.Time          `json:"spawn_time"`
-	Deposit       string             `json:"deposit"`
 }
 
 func (s System) sendTokens(action SendTokensAction) {
@@ -89,6 +38,14 @@ func (s System) sendTokens(action SendTokensAction) {
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
+
+type StartChainAction struct {
+	chain          uint
+	validators     []uint
+	genesisChanges string
+	skipGentx      bool
+	copyConfigs    string
 }
 
 func (s System) startChain(
@@ -158,6 +115,15 @@ func (s System) startChain(
 	})
 }
 
+type SubmitTextProposalAction struct {
+	chain       uint
+	from        uint
+	deposit     uint
+	propType    string
+	title       string
+	description string
+}
+
 func (s System) submitTextProposal(
 	action SubmitTextProposalAction,
 ) {
@@ -182,6 +148,27 @@ func (s System) submitTextProposal(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
+
+type SubmitConsumerProposalAction struct {
+	chain         uint
+	from          uint
+	deposit       uint
+	consumerChain uint
+	spawnTime     time.Time
+	initialHeight clienttypes.Height
+}
+
+// TODO: import this directly from the module once it is merged
+type CreateChildChainProposalJSON struct {
+	Title         string             `json:"title"`
+	Description   string             `json:"description"`
+	ChainId       string             `json:"chain_id"`
+	InitialHeight clienttypes.Height `json:"initial_height"`
+	GenesisHash   []byte             `json:"genesis_hash"`
+	BinaryHash    []byte             `json:"binary_hash"`
+	SpawnTime     time.Time          `json:"spawn_time"`
+	Deposit       string             `json:"deposit"`
 }
 
 func (s System) submitConsumerProposal(
@@ -229,6 +216,13 @@ func (s System) submitConsumerProposal(
 	}
 }
 
+type VoteGovProposalAction struct {
+	chain      uint
+	from       []uint
+	vote       []string
+	propNumber uint
+}
+
 func (s System) voteGovProposal(
 	action VoteGovProposalAction,
 ) {
@@ -260,6 +254,12 @@ func (s System) voteGovProposal(
 
 	wg.Wait()
 	time.Sleep(time.Duration(s.chainConfigs[action.chain].votingWaitTime) * time.Second)
+}
+
+type StartConsumerChainAction struct {
+	consumerChain uint
+	providerChain uint
+	validators    []uint
 }
 
 func (s System) startConsumerChain(action StartConsumerChainAction) {
