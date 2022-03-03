@@ -84,7 +84,11 @@ func (s System) startChain(
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
-		fmt.Sprint(action.skipGentx), action.copyConfigs)
+		fmt.Sprint(action.skipGentx), action.copyConfigs,
+		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
+			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
+		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
+	)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -437,15 +441,15 @@ func (s System) addIbcChannel(action AddIbcChannelAction) {
 }
 
 type RelayPacketsAction struct {
-	chain     uint
-	port      string
-	channelId string
+	chain   uint
+	port    string
+	channel uint
 }
 
 func (s System) relayPackets(action RelayPacketsAction) {
 	// hermes clear packets ibc0 transfer channel-13
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "$HOME/.cargo/bin/hermes", "clear", "packets",
-		s.chainConfigs[action.chain].chainId, action.port, action.channelId,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
+		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
 	).CombinedOutput()
 
 	if err != nil {
@@ -467,3 +471,6 @@ func (s System) getQueryValidatorHome(chain uint) string {
 func (s System) getTxValidatorHome(chain uint, validator uint) string {
 	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }
+
+// 4.50s user 2.39s system 5% cpu 2:01.62 total
+// 4.65s user 2.43s system 12% cpu 58.905 total

@@ -212,4 +212,12 @@ var exampleSteps1 = []Step{
 		},
 		state: State{},
 	},
+	{
+		action: RelayPacketsAction{
+			chain:   0,
+			port:    "parent",
+			channel: 0,
+		},
+		state: State{},
+	},
 }

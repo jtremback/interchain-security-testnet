@@ -71,8 +71,8 @@ func DefaultSystemConfig() System {
 			{
 				chainId:           "provider",
 				ipPrefix:          "7.7.7",
-				votingWaitTime:    10,
-				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"10s\"",
+				votingWaitTime:    5,
+				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"5s\"",
 				initialAllocation: "10000000000stake,10000000000footoken",
 				stakeAmount:       "500000000stake",
 				// rpcPort:           26657,

@@ -30,6 +30,9 @@ SKIP_GENTX=$6
 # Whether to copy in validator configs from somewhere else
 COPY_KEYS=$7
 
+# A sed string modifying the tendermint config
+TENDERMINT_CONFIG_TRANSFORM=$8
+
 
 
 # CREATE VALIDATORS AND DO GENESIS CEREMONY
@@ -108,6 +111,12 @@ do
     if [ "$COPY_KEYS" != "" ] ; then 
         cp /$COPY_KEYS/validator$VAL_ID/config/priv_validator_key.json /$CHAIN_ID/validator$VAL_ID/config/
         cp /$COPY_KEYS/validator$VAL_ID/config/node_key.json /$CHAIN_ID/validator$VAL_ID/config/
+    fi
+
+    # Modify tendermint configs of validator
+    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
+        #'s/foo/bar/;s/abc/def/'
+        sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
     fi
 done
 
