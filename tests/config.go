@@ -33,6 +33,7 @@ type ContainerConfig struct {
 	instanceName  string
 	binaryName    string
 	exposePorts   []uint
+	ccvVersion    string
 }
 
 // These values will not be altered during a typical test run
@@ -49,6 +50,7 @@ func DefaultSystemConfig() System {
 			containerName: "interchain-security-container",
 			instanceName:  "interchain-security-instance",
 			binaryName:    "interchain-securityd",
+			ccvVersion:    "1",
 			exposePorts:   []uint{9090, 26657, 9089, 26656},
 		},
 		validatorConfigs: []ValidatorConfig{

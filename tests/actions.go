@@ -319,8 +319,8 @@ func (s System) addChainToRelayer(action AddChainToRelayerAction) {
 	valIp := s.chainConfigs[action.chain].ipPrefix + `.` + fmt.Sprint(action.validator)
 	chainId := s.chainConfigs[action.chain].chainId
 	keyName := "validator" + fmt.Sprint(action.validator)
-	grpcAddr := "tcp://" + valIp + ":26658"
-	rpcAddr := "tcp://" + valIp + ":9091"
+	rpcAddr := "http://" + valIp + ":26658"
+	grpcAddr := "tcp://" + valIp + ":9091"
 	wsAddr := "ws://" + valIp + ":26657/websocket"
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
@@ -351,26 +351,88 @@ func (s System) addChainToRelayer(action AddChainToRelayerAction) {
 	}
 }
 
+type AddIbcConnectionAction struct {
+	chainA  uint
+	chainB  uint
+	clientA uint
+	clientB uint
+	order   string
+}
+
+func (s System) addIbcConnection(action AddIbcConnectionAction) {
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+		"create", "connection",
+		s.chainConfigs[action.chainA].chainId,
+		"--client-a", "07-tendermint-"+fmt.Sprint(action.clientA),
+		"--client-b", "07-tendermint-"+fmt.Sprint(action.clientB),
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		// fmt.Println("addIbcConnection: " + out)
+		if out == "done!!!!!!!!" {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 type AddIbcChannelAction struct {
-	chainA uint
-	chainB uint
-	portA  string
-	portB  string
-	order  string
+	chainA      uint
+	chainB      uint
+	connectionA uint
+	portA       string
+	portB       string
+	order       string
 }
 
 func (s System) addIbcChannel(action AddIbcChannelAction) {
-	// hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+	// // hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "channel",
-		s.chainConfigs[action.chainA].chainId, s.chainConfigs[action.chainB].chainId,
+		s.chainConfigs[action.chainA].chainId,
 		"--port-a", action.portA,
 		"--port-b", action.portB,
 		"-o", action.order,
-	).CombinedOutput()
+		"--channel-version", s.containerConfig.ccvVersion,
+		"--connection-a", "connection-"+fmt.Sprint(action.connectionA),
+	)
 
+	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		// fmt.Println("addIBCChannel: " + out)
+		if out == "done!!!!!!!!" {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
 	}
 }
 

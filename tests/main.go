@@ -41,10 +41,14 @@ func (s System) runStep(step Step) {
 		s.startConsumerChain(action)
 	case AddChainToRelayerAction:
 		s.addChainToRelayer(action)
+	case AddIbcConnectionAction:
+		s.addIbcConnection(action)
 	case AddIbcChannelAction:
 		s.addIbcChannel(action)
 	case RelayPacketsAction:
 		s.relayPackets(action)
+	default:
+		log.Fatal(fmt.Sprintf(`unknown action: %#v`, action))
 	}
 
 	modelState := step.state

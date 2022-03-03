@@ -191,4 +191,25 @@ var exampleSteps1 = []Step{
 			},
 		},
 	},
+	{
+		action: AddIbcConnectionAction{
+			chainA:  1,
+			chainB:  0,
+			clientA: 0,
+			clientB: 0,
+			order:   "ordered",
+		},
+		state: State{},
+	},
+	{
+		action: AddIbcChannelAction{
+			chainA:      1,
+			chainB:      0,
+			connectionA: 0,
+			portA:       "child",
+			portB:       "parent",
+			order:       "ordered",
+		},
+		state: State{},
+	},
 }
