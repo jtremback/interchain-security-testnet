@@ -312,7 +312,7 @@ websocket_addr = "%s"
 
 [chains.gas_price]
 	denom = "stake"
-	price = 0.001
+	price = 0.00
 
 [chains.trust_threshold]
 	denominator = "3"
@@ -450,6 +450,34 @@ func (s System) relayPackets(action RelayPacketsAction) {
 	// hermes clear packets ibc0 transfer channel-13
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
 		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type DelegateTokensAction struct {
+	chain  uint
+	from   uint
+	to     uint
+	amount uint
+}
+
+func (s System) delegateTokens(action DelegateTokensAction) {
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"tx", "staking", "delegate",
+		s.validatorConfigs[action.to].valAddress,
+		fmt.Sprint(action.amount)+`stake`,
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
+		`--home`, s.getTxValidatorHome(action.chain, action.from),
+		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
 	).CombinedOutput()
 
 	if err != nil {

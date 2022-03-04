@@ -220,4 +220,28 @@ var exampleSteps1 = []Step{
 		},
 		state: State{},
 	},
+	{
+		action: DelegateTokensAction{
+			chain:  0,
+			from:   0,
+			to:     0,
+			amount: 1,
+		},
+		state: State{
+			0: ChainState{
+				ValBalances: &map[uint]uint{
+					0: 9499999997,
+					1: 9500000002,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   0,
+			port:    "parent",
+			channel: 0,
+		},
+		state: State{},
+	},
 }

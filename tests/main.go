@@ -47,6 +47,8 @@ func (s System) runStep(step Step) {
 		s.addIbcChannel(action)
 	case RelayPacketsAction:
 		s.relayPackets(action)
+	case DelegateTokensAction:
+		s.delegateTokens(action)
 	default:
 		log.Fatal(fmt.Sprintf(`unknown action: %#v`, action))
 	}
