@@ -45,7 +45,6 @@ type StartChainAction struct {
 	validators     []uint
 	genesisChanges string
 	skipGentx      bool
-	copyConfigs    string
 }
 
 func (s System) startChain(
@@ -88,7 +87,7 @@ func (s System) startChain(
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
-		fmt.Sprint(action.skipGentx), action.copyConfigs,
+		fmt.Sprint(action.skipGentx),
 		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
@@ -289,7 +288,6 @@ func (s System) startConsumerChain(action StartConsumerChainAction) {
 		validators:     action.validators,
 		genesisChanges: ".app_state.ccvchild = " + string(bz),
 		skipGentx:      true,
-		copyConfigs:    s.chainConfigs[action.providerChain].chainId,
 	})
 }
 

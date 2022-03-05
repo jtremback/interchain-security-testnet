@@ -29,11 +29,8 @@ GENESIS_TRANSFORM=$5
 # Whether to skip collecting gentxs so that the genesis does not have them
 SKIP_GENTX=$6
 
-# Whether to copy in validator configs from somewhere else
-COPY_KEYS=$7
-
 # A sed string modifying the tendermint config
-TENDERMINT_CONFIG_TRANSFORM=$8
+TENDERMINT_CONFIG_TRANSFORM=$7
 
 
 
@@ -121,12 +118,6 @@ do
     if [ $VAL_ID != $FIRST_VAL_ID ]; then
         cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
     fi
-
-    # # Copy in keys from another chain. This is used to start a consumer chain
-    # if [ "$COPY_KEYS" != "" ] ; then 
-    #     cp /$COPY_KEYS/validator$VAL_ID/config/priv_validator_key.json /$CHAIN_ID/validator$VAL_ID/config/
-    #     cp /$COPY_KEYS/validator$VAL_ID/config/node_key.json /$CHAIN_ID/validator$VAL_ID/config/
-    # fi
 
     # Modify tendermint configs of validator
     if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
