@@ -9,7 +9,9 @@ BIN=$1
 #     mnemonic: "crackle snap pop ... etc",
 #     allocation: "10000000000stake,10000000000footoken",
 #     stake: "5000000000stake",
-#     number: "0"
+#     number: "0",
+#     priv_validator_key: "{\"address\": \"3566F464673B2F069758DAE86FC25D04017BB147\",\"pub_key\": {\"type\": \"tendermint/PubKeyEd25519\",\"value\": \"XrLjKdc4mB2gfqplvnoySjSJq2E90RynUwaO3WhJutk=\"},\"priv_key\": {\"type\": \"tendermint/PrivKeyEd25519\",\"value\": \"czGSLs/Ocau8aJ5J5zQHMxf3d7NR0xjMECN6YGTIWqtesuMp1ziYHaB+qmW+ejJKNImrYT3RHKdTBo7daEm62Q==\"}}"
+#     node_key: "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"alIHj6hXnzpLAadgb7+E2eeecwxoNdzuZrfhMX36EaD5/LgzL0ZUoVp7AK3np0K5T35JWLLv0jJKmeRIhG0GjA==\"}}"
 # }, ... ]
 VALIDATORS=$2
 
@@ -92,6 +94,19 @@ do
     # Copy in the genesis.json
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
 
+    # Copy in validator state file
+    echo '{"height": "0","round": 0,"step": 0}' > /$CHAIN_ID/validator$VAL_ID/data/priv_validator_state.json
+
+    PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].priv_validator_key")
+    if [[ "$PRIV_VALIDATOR_KEY" ]]; then
+        echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+    fi
+
+    NODE_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].node_key")
+    if [[ "$NODE_KEY" ]]; then
+        echo "$NODE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/node_key.json
+    fi
+
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
     STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
     $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
@@ -107,11 +122,11 @@ do
         cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
     fi
 
-    # Copy in keys from another chain. This is used to start a consumer chain
-    if [ "$COPY_KEYS" != "" ] ; then 
-        cp /$COPY_KEYS/validator$VAL_ID/config/priv_validator_key.json /$CHAIN_ID/validator$VAL_ID/config/
-        cp /$COPY_KEYS/validator$VAL_ID/config/node_key.json /$CHAIN_ID/validator$VAL_ID/config/
-    fi
+    # # Copy in keys from another chain. This is used to start a consumer chain
+    # if [ "$COPY_KEYS" != "" ] ; then 
+    #     cp /$COPY_KEYS/validator$VAL_ID/config/priv_validator_key.json /$CHAIN_ID/validator$VAL_ID/config/
+    #     cp /$COPY_KEYS/validator$VAL_ID/config/node_key.json /$CHAIN_ID/validator$VAL_ID/config/
+    # fi
 
     # Modify tendermint configs of validator
     if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 

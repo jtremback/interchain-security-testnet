@@ -53,19 +53,23 @@ func (s System) startChain(
 ) {
 	chainConfig := s.chainConfigs[action.chain]
 	type jsonValAttrs struct {
-		Mnemonic   string `json:"mnemonic"`
-		Allocation string `json:"allocation"`
-		Stake      string `json:"stake"`
-		Number     string `json:"number"`
+		Mnemonic         string `json:"mnemonic"`
+		Allocation       string `json:"allocation"`
+		Stake            string `json:"stake"`
+		Number           string `json:"number"`
+		PrivValidatorKey string `json:"priv_validator_key"`
+		NodeKey          string `json:"node_key"`
 	}
 
 	var validators []jsonValAttrs
 	for _, val := range action.validators {
 		validators = append(validators, jsonValAttrs{
-			Mnemonic:   s.validatorConfigs[val].mnemonic,
-			Allocation: chainConfig.initialAllocation,
-			Stake:      chainConfig.stakeAmount,
-			Number:     fmt.Sprint(val),
+			Mnemonic:         s.validatorConfigs[val].mnemonic,
+			NodeKey:          s.validatorConfigs[val].nodeKey,
+			PrivValidatorKey: s.validatorConfigs[val].privValidatorKey,
+			Allocation:       chainConfig.initialAllocation,
+			Stake:            chainConfig.stakeAmount,
+			Number:           fmt.Sprint(val),
 		})
 	}
 
@@ -104,7 +108,7 @@ func (s System) startChain(
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("startChain: " + out)
+		fmt.Println("startChain: " + out)
 		if out == "done!!!!!!!!" {
 			break
 		}
@@ -468,7 +472,7 @@ func (s System) delegateTokens(action DelegateTokensAction) {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"tx", "staking", "delegate",
-		s.validatorConfigs[action.to].valAddress,
+		s.validatorConfigs[action.to].valoperAddress,
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),

@@ -225,12 +225,12 @@ var exampleSteps1 = []Step{
 			chain:  0,
 			from:   0,
 			to:     0,
-			amount: 1,
+			amount: 11111111,
 		},
 		state: State{
 			0: ChainState{
 				ValBalances: &map[uint]uint{
-					0: 9499999997,
+					0: 9488888887,
 					1: 9500000002,
 				},
 			},
@@ -245,3 +245,5 @@ var exampleSteps1 = []Step{
 		state: State{},
 	},
 }
+
+// interchain-securityd query tendermint-validator-set --node "tcp://7.7.8.2:26658"
