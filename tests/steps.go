@@ -175,6 +175,18 @@ var exampleSteps1 = []Step{
 					0: 9488888887,
 					1: 9500000002,
 				},
+				ValPowers: &map[uint]uint{
+					0: 511,
+					1: 500,
+					2: 500,
+				},
+			},
+			1: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 500,
+					1: 500,
+					2: 500,
+				},
 			},
 		},
 	},
@@ -185,7 +197,7 @@ var exampleSteps1 = []Step{
 			channel: 0,
 		},
 		state: State{
-			0: ChainState{
+			1: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 511,
 					1: 500,
