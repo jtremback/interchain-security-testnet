@@ -275,6 +275,7 @@ func (s System) startConsumerChain(action StartConsumerChainAction) {
 		"query", "parent", "child-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
+		// TODO: Eliminate hardcoded query node id "0"
 		`--node`, "tcp://"+s.chainConfigs[action.providerChain].ipPrefix+".0:26658",
 		`-o`, `json`,
 	).CombinedOutput()

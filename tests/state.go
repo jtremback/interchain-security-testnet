@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -17,6 +18,7 @@ type State map[uint]ChainState
 type ChainState struct {
 	ValBalances *map[uint]uint
 	Proposals   *map[uint]Proposal
+	ValPowers   *map[uint]uint
 }
 
 type Proposal interface {
@@ -66,6 +68,11 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 		chainState.Proposals = &proposals
 	}
 
+	if modelState.ValPowers != nil {
+		powers := s.getValPowers(chain, *modelState.ValPowers)
+		chainState.ValPowers = &powers
+	}
+
 	return chainState
 }
 
@@ -82,6 +89,15 @@ func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]
 	systemState := map[uint]Proposal{}
 	for k, _ := range modelState {
 		systemState[k] = s.getProposal(chain, k)
+	}
+
+	return systemState
+}
+
+func (s System) getValPowers(chain uint, modelState map[uint]uint) map[uint]uint {
+	systemState := map[uint]uint{}
+	for k, _ := range modelState {
+		systemState[k] = s.getValPower(chain, k)
 	}
 
 	return systemState
@@ -175,14 +191,19 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 }
 
 type TmValidatorSetYaml struct {
-	Total      uint `yaml:"total"`
+	Total      string `yaml:"total"`
 	Validators []struct {
-		Address     string `yaml:"address"`
-		VotingPower uint   `yaml:"voting_power"`
+		Address     string    `yaml:"address"`
+		VotingPower string    `yaml:"voting_power"`
+		PubKey      ValPubKey `yaml:"pub_key"`
 	}
 }
 
-func (s System) getTmValidatorPower(chain uint, validator uint) uint {
+type ValPubKey struct {
+	Value string `yaml:"value"`
+}
+
+func (s System) getValPower(chain uint, validator uint) uint {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"query", "tendermint-validator-set",
@@ -199,64 +220,26 @@ func (s System) getTmValidatorPower(chain uint, validator uint) uint {
 		log.Fatalf("error: %v", err)
 	}
 
-	if valset.Total != uint(len(valset.Validators)) {
+	total, err := strconv.Atoi(valset.Total)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+
+	if total != len(valset.Validators) {
 		log.Fatalf("Total number of validators %v does not match number of validators in list %v. Probably a query pagination issue.",
 			valset.Total, uint(len(valset.Validators)))
 	}
 
 	for _, val := range valset.Validators {
-		if val.Address == s.validatorConfigs[validator].valoperAddress {
-			return val.VotingPower
+		if val.Address == s.validatorConfigs[validator].valconsAddress {
+			votingPower, err := strconv.Atoi(val.VotingPower)
+			if err != nil {
+				log.Fatalf("error: %v", err)
+			}
+
+			return uint(votingPower)
 		}
 	}
-
-	// if err != nil {
-	// 	if noProposalRegex.Match(bz) {
-	// 		return prop
-	// 	}
-
-	// 	log.Fatal(err, "\n", string(bz))
-	// }
-
-	// propType := gjson.Get(string(bz), `content.@type`).String()
-	// deposit := gjson.Get(string(bz), `total_deposit.#(denom=="stake").amount`).Uint()
-	// status := gjson.Get(string(bz), `status`).String()
-
-	// switch propType {
-	// case "/cosmos.gov.v1beta1.TextProposal":
-	// 	title := gjson.Get(string(bz), `content.title`).String()
-	// 	description := gjson.Get(string(bz), `content.description`).String()
-
-	// 	return TextProposal{
-	// 		Deposit:     uint(deposit),
-	// 		Status:      status,
-	// 		Title:       title,
-	// 		Description: description,
-	// 	}
-	// case "/interchain_security.ccv.parent.v1.CreateChildChainProposal":
-	// 	chainId := gjson.Get(string(bz), `content.chain_id`).String()
-	// 	spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time()
-
-	// 	var chain uint
-	// 	for i, conf := range s.chainConfigs {
-	// 		if conf.chainId == chainId {
-	// 			chain = uint(i)
-	// 			break
-	// 		}
-	// 	}
-
-	// 	return ConsumerProposal{
-	// 		Deposit:   uint(deposit),
-	// 		Status:    status,
-	// 		Chain:     chain,
-	// 		SpawnTime: spawnTime.UTC(),
-	// 		InitialHeight: clienttypes.Height{
-	// 			RevisionNumber: gjson.Get(string(bz), `content.initial_height.revision_number`).Uint(),
-	// 			RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
-	// 		},
-	// 	}
-
-	// }
 
 	log.Fatalf("Validator %v not in tendermint validator set", validator)
 
