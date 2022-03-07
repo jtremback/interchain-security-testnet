@@ -211,8 +211,6 @@ func (s System) getValPower(chain uint, validator uint) uint {
 		`--node`, "tcp://"+s.chainConfigs[chain].ipPrefix+".0:26658",
 	).CombinedOutput()
 
-	//TODO: throw error for proposal not found
-
 	valset := TmValidatorSetYaml{}
 
 	err = yaml.Unmarshal(bz, &valset)

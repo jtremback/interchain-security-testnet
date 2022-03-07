@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -29,7 +31,7 @@ func (s System) sendTokens(action SendTokensAction) {
 
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, s.getTxValidatorHome(action.chain, action.from),
-		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -146,7 +148,7 @@ func (s System) submitTextProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -197,7 +199,6 @@ func (s System) submitConsumerProposal(
 		log.Fatal(err)
 	}
 
-	// TODO: cleanup file
 	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), "/temp-proposal.json")).CombinedOutput()
 
 	if err != nil {
@@ -212,7 +213,7 @@ func (s System) submitConsumerProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -247,7 +248,7 @@ func (s System) voteGovProposal(
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, s.chainConfigs[action.chain].chainId,
 				`--home`, `/provider/validator`+fmt.Sprint(val),
-				`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
+				`--node`, s.getQueryValidatorNode(action.chain),
 				`--keyring-backend`, `test`,
 				`-b`, `block`,
 				`-y`,
@@ -275,8 +276,7 @@ func (s System) startConsumerChain(action StartConsumerChainAction) {
 		"query", "parent", "child-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
-		// TODO: Eliminate hardcoded query node id "0"
-		`--node`, "tcp://"+s.chainConfigs[action.providerChain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(action.providerChain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -477,7 +477,7 @@ func (s System) delegateTokens(action DelegateTokensAction) {
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, s.getTxValidatorHome(action.chain, action.from),
-		`--node`, "tcp://"+s.chainConfigs[action.chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(action.chain),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -488,7 +488,9 @@ func (s System) delegateTokens(action DelegateTokensAction) {
 	}
 }
 
-func (s System) getQueryValidatorHome(chain uint) string {
+var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
+
+func (s System) getQueryValidatorNum(chain uint) uint {
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
 
@@ -496,12 +498,18 @@ func (s System) getQueryValidatorHome(chain uint) string {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	return `/` + s.chainConfigs[chain].chainId + `/` + string(bz)
+	validator, err := strconv.Atoi(queryValidatorRegex.FindString(string(bz)))
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	return uint(validator)
+}
+
+func (s System) getQueryValidatorNode(chain uint) string {
+	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(s.getQueryValidatorNum(chain)) + ":26658"
 }
 
 func (s System) getTxValidatorHome(chain uint, validator uint) string {
 	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }
-
-// 4.50s user 2.39s system 5% cpu 2:01.62 total
-// 4.65s user 2.43s system 12% cpu 58.905 total

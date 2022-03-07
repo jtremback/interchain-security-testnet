@@ -207,5 +207,3 @@ var exampleSteps1 = []Step{
 		},
 	},
 }
-
-// interchain-securityd query tendermint-validator-set --node "tcp://7.7.8.2:26658"
