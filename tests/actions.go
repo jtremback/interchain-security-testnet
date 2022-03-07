@@ -21,7 +21,10 @@ type SendTokensAction struct {
 	amount uint
 }
 
-func (s System) sendTokens(action SendTokensAction) {
+func (s System) sendTokens(
+	action SendTokensAction,
+	verbose bool,
+) {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"tx", "bank", "send",
@@ -31,7 +34,7 @@ func (s System) sendTokens(action SendTokensAction) {
 
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, s.getTxValidatorHome(action.chain, action.from),
-		`--node`, s.getQueryValidatorNode(action.chain),
+		`--node`, s.getQueryValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -51,6 +54,7 @@ type StartChainAction struct {
 
 func (s System) startChain(
 	action StartChainAction,
+	verbose bool,
 ) {
 	chainConfig := s.chainConfigs[action.chain]
 	type jsonValAttrs struct {
@@ -87,7 +91,7 @@ func (s System) startChain(
 	}
 
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/start-chain/start-chain.sh", s.containerConfig.binaryName, string(vals),
+		"/testnet-scripts/start-chain.sh", s.containerConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
 		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
@@ -109,7 +113,9 @@ func (s System) startChain(
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		fmt.Println("startChain: " + out)
+		if verbose {
+			fmt.Println("startChain: " + out)
+		}
 		if out == "done!!!!!!!!" {
 			break
 		}
@@ -121,7 +127,7 @@ func (s System) startChain(
 	s.addChainToRelayer(AddChainToRelayerAction{
 		chain:     action.chain,
 		validator: action.validators[0],
-	})
+	}, verbose)
 }
 
 type SubmitTextProposalAction struct {
@@ -135,6 +141,7 @@ type SubmitTextProposalAction struct {
 
 func (s System) submitTextProposal(
 	action SubmitTextProposalAction,
+	verbose bool,
 ) {
 	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
@@ -148,7 +155,7 @@ func (s System) submitTextProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--node`, s.getQueryValidatorNode(action.chain),
+		`--node`, s.getQueryValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -182,6 +189,7 @@ type CreateChildChainProposalJSON struct {
 
 func (s System) submitConsumerProposal(
 	action SubmitConsumerProposalAction,
+	verbose bool,
 ) {
 	prop := CreateChildChainProposalJSON{
 		Title:         "Create a chain",
@@ -213,7 +221,7 @@ func (s System) submitConsumerProposal(
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--node`, s.getQueryValidatorNode(action.chain),
+		`--node`, s.getQueryValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -233,6 +241,7 @@ type VoteGovProposalAction struct {
 
 func (s System) voteGovProposal(
 	action VoteGovProposalAction,
+	verbose bool,
 ) {
 	var wg sync.WaitGroup
 	for i, val := range action.from {
@@ -248,7 +257,7 @@ func (s System) voteGovProposal(
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, s.chainConfigs[action.chain].chainId,
 				`--home`, `/provider/validator`+fmt.Sprint(val),
-				`--node`, s.getQueryValidatorNode(action.chain),
+				`--node`, s.getQueryValidatorNode(action.chain, action.from[0]),
 				`--keyring-backend`, `test`,
 				`-b`, `block`,
 				`-y`,
@@ -270,13 +279,16 @@ type StartConsumerChainAction struct {
 	validators    []uint
 }
 
-func (s System) startConsumerChain(action StartConsumerChainAction) {
+func (s System) startConsumerChain(
+	action StartConsumerChainAction,
+	verbose bool,
+) {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"query", "parent", "child-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
-		`--node`, s.getQueryValidatorNode(action.providerChain),
+		`--node`, s.getQueryValidatorNode(action.providerChain, s.getQueryValidatorNum(action.providerChain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -289,7 +301,7 @@ func (s System) startConsumerChain(action StartConsumerChainAction) {
 		validators:     action.validators,
 		genesisChanges: ".app_state.ccvchild = " + string(bz),
 		skipGentx:      true,
-	})
+	}, verbose)
 }
 
 type AddChainToRelayerAction struct {
@@ -322,7 +334,10 @@ websocket_addr = "%s"
 	numerator = "1"
 `
 
-func (s System) addChainToRelayer(action AddChainToRelayerAction) {
+func (s System) addChainToRelayer(
+	action AddChainToRelayerAction,
+	verbose bool,
+) {
 	valIp := s.chainConfigs[action.chain].ipPrefix + `.` + fmt.Sprint(action.validator)
 	chainId := s.chainConfigs[action.chain].chainId
 	keyName := "validator" + fmt.Sprint(action.validator)
@@ -366,7 +381,10 @@ type AddIbcConnectionAction struct {
 	order   string
 }
 
-func (s System) addIbcConnection(action AddIbcConnectionAction) {
+func (s System) addIbcConnection(
+	action AddIbcConnectionAction,
+	verbose bool,
+) {
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "connection",
 		s.chainConfigs[action.chainA].chainId,
@@ -388,7 +406,9 @@ func (s System) addIbcConnection(action AddIbcConnectionAction) {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("addIbcConnection: " + out)
+		if verbose {
+			fmt.Println("addIbcConnection: " + out)
+		}
 		if out == "done!!!!!!!!" {
 			break
 		}
@@ -407,7 +427,10 @@ type AddIbcChannelAction struct {
 	order       string
 }
 
-func (s System) addIbcChannel(action AddIbcChannelAction) {
+func (s System) addIbcChannel(
+	action AddIbcChannelAction,
+	verbose bool,
+) {
 	// // hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "channel",
@@ -433,7 +456,9 @@ func (s System) addIbcChannel(action AddIbcChannelAction) {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("addIBCChannel: " + out)
+		if verbose {
+			fmt.Println("addIBCChannel: " + out)
+		}
 		if out == "done!!!!!!!!" {
 			break
 		}
@@ -449,7 +474,10 @@ type RelayPacketsAction struct {
 	channel uint
 }
 
-func (s System) relayPackets(action RelayPacketsAction) {
+func (s System) relayPackets(
+	action RelayPacketsAction,
+	verbose bool,
+) {
 	// hermes clear packets ibc0 transfer channel-13
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
 		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
@@ -467,7 +495,10 @@ type DelegateTokensAction struct {
 	amount uint
 }
 
-func (s System) delegateTokens(action DelegateTokensAction) {
+func (s System) delegateTokens(
+	action DelegateTokensAction,
+	verbose bool,
+) {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"tx", "staking", "delegate",
@@ -477,7 +508,7 @@ func (s System) delegateTokens(action DelegateTokensAction) {
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, s.getTxValidatorHome(action.chain, action.from),
-		`--node`, s.getQueryValidatorNode(action.chain),
+		`--node`, s.getQueryValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -506,8 +537,8 @@ func (s System) getQueryValidatorNum(chain uint) uint {
 	return uint(validator)
 }
 
-func (s System) getQueryValidatorNode(chain uint) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(s.getQueryValidatorNum(chain)) + ":26658"
+func (s System) getQueryValidatorNode(chain uint, validator uint) string {
+	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
 }
 
 func (s System) getTxValidatorHome(chain uint, validator uint) string {

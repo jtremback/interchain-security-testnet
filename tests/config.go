@@ -83,8 +83,6 @@ func DefaultSystemConfig() System {
 				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"5s\"",
 				initialAllocation: "10000000000stake,10000000000footoken",
 				stakeAmount:       "500000000stake",
-				// rpcPort:           26657,
-				// grpcPort:          9090,
 			},
 			{
 				chainId:           "consumer",
@@ -93,8 +91,6 @@ func DefaultSystemConfig() System {
 				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"10s\"",
 				initialAllocation: "10000000000stake,10000000000footoken",
 				stakeAmount:       "500000000stake",
-				// rpcPort:           26656,
-				// grpcPort:          9089,
 			},
 		},
 	}

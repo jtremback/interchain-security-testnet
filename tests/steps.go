@@ -13,7 +13,7 @@ type Step struct {
 
 var now = time.Now().UTC()
 
-var exampleSteps1 = []Step{
+var happyPathSteps = []Step{
 	{
 		action: StartChainAction{
 			chain:      0,

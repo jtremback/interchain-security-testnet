@@ -11,44 +11,45 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
+var verbose = false
+
 func main() {
 	s := DefaultSystemConfig()
 
 	s.startDocker()
-	// println("docker started?")
 
-	for _, step := range exampleSteps1 {
-		s.runStep(step)
+	for _, step := range happyPathSteps {
+		s.runStep(step, verbose)
 	}
 
-	println("test completed")
+	println("test successful")
 }
 
-func (s System) runStep(step Step) {
+func (s System) runStep(step Step, verbose bool) {
 	fmt.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
-		s.startChain(action)
+		s.startChain(action, verbose)
 	case SendTokensAction:
-		s.sendTokens(action)
+		s.sendTokens(action, verbose)
 	case SubmitTextProposalAction:
-		s.submitTextProposal(action)
+		s.submitTextProposal(action, verbose)
 	case SubmitConsumerProposalAction:
-		s.submitConsumerProposal(action)
+		s.submitConsumerProposal(action, verbose)
 	case VoteGovProposalAction:
-		s.voteGovProposal(action)
+		s.voteGovProposal(action, verbose)
 	case StartConsumerChainAction:
-		s.startConsumerChain(action)
+		s.startConsumerChain(action, verbose)
 	case AddChainToRelayerAction:
-		s.addChainToRelayer(action)
+		s.addChainToRelayer(action, verbose)
 	case AddIbcConnectionAction:
-		s.addIbcConnection(action)
+		s.addIbcConnection(action, verbose)
 	case AddIbcChannelAction:
-		s.addIbcChannel(action)
+		s.addIbcChannel(action, verbose)
 	case RelayPacketsAction:
-		s.relayPackets(action)
+		s.relayPackets(action, verbose)
 	case DelegateTokensAction:
-		s.delegateTokens(action)
+		s.delegateTokens(action, verbose)
 	default:
 		log.Fatal(fmt.Sprintf(`unknown action: %#v`, action))
 	}
@@ -69,7 +70,7 @@ func (s System) runStep(step Step) {
 func (s System) startDocker() {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	ports_string := ""
@@ -94,7 +95,9 @@ func (s System) startDocker() {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		// fmt.Println("startDocker: " + out)
+		if verbose {
+			fmt.Println("startDocker: " + out)
+		}
 		if out == "beacon!!!!!!!!!!" {
 			return
 		}
