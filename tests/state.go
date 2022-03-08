@@ -69,6 +69,8 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 	}
 
 	if modelState.ValPowers != nil {
+		// TODO: this hack should correct intermittent failures
+		time.Sleep(100 * time.Millisecond)
 		powers := s.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
@@ -78,7 +80,7 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 
 func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint {
 	systemState := map[uint]uint{}
-	for k, _ := range modelState {
+	for k := range modelState {
 		systemState[k] = s.getBalance(chain, k)
 	}
 
@@ -87,7 +89,7 @@ func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint 
 
 func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]Proposal {
 	systemState := map[uint]Proposal{}
-	for k, _ := range modelState {
+	for k := range modelState {
 		systemState[k] = s.getProposal(chain, k)
 	}
 
@@ -96,7 +98,7 @@ func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]
 
 func (s System) getValPowers(chain uint, modelState map[uint]uint) map[uint]uint {
 	systemState := map[uint]uint{}
-	for k, _ := range modelState {
+	for k := range modelState {
 		systemState[k] = s.getValPower(chain, k)
 	}
 
@@ -109,7 +111,7 @@ func (s System) getBalance(chain uint, validator uint) uint {
 		"query", "bank", "balances",
 		s.validatorConfigs[validator].delAddress,
 
-		`--node`, "tcp://"+s.chainConfigs[chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(chain, s.getQueryValidatorNum(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -131,7 +133,7 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, "tcp://"+s.chainConfigs[chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(chain, s.getQueryValidatorNum(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -208,8 +210,12 @@ func (s System) getValPower(chain uint, validator uint) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, "tcp://"+s.chainConfigs[chain].ipPrefix+".0:26658",
+		`--node`, s.getQueryValidatorNode(chain, s.getQueryValidatorNum(chain)),
 	).CombinedOutput()
+
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
 
 	valset := TmValidatorSetYaml{}
 
