@@ -47,9 +47,15 @@ func (s System) sendTokens(
 
 type StartChainAction struct {
 	chain          uint
-	validators     []uint
+	validators     []StartChainValidator
 	genesisChanges string
 	skipGentx      bool
+}
+
+type StartChainValidator struct {
+	id         uint
+	allocation uint
+	stake      uint
 }
 
 func (s System) startChain(
@@ -69,12 +75,12 @@ func (s System) startChain(
 	var validators []jsonValAttrs
 	for _, val := range action.validators {
 		validators = append(validators, jsonValAttrs{
-			Mnemonic:         s.validatorConfigs[val].mnemonic,
-			NodeKey:          s.validatorConfigs[val].nodeKey,
-			PrivValidatorKey: s.validatorConfigs[val].privValidatorKey,
-			Allocation:       chainConfig.initialAllocation,
-			Stake:            chainConfig.stakeAmount,
-			Number:           fmt.Sprint(val),
+			Mnemonic:         s.validatorConfigs[val.id].mnemonic,
+			NodeKey:          s.validatorConfigs[val.id].nodeKey,
+			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
+			Allocation:       fmt.Sprint(val.allocation) + "stake",
+			Stake:            fmt.Sprint(val.stake) + "stake",
+			Number:           fmt.Sprint(val.id),
 		})
 	}
 
@@ -126,7 +132,7 @@ func (s System) startChain(
 
 	s.addChainToRelayer(AddChainToRelayerAction{
 		chain:     action.chain,
-		validator: action.validators[0],
+		validator: action.validators[0].id,
 	}, verbose)
 }
 
@@ -276,7 +282,7 @@ func (s System) voteGovProposal(
 type StartConsumerChainAction struct {
 	consumerChain uint
 	providerChain uint
-	validators    []uint
+	validators    []StartChainValidator
 }
 
 func (s System) startConsumerChain(

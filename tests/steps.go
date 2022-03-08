@@ -16,8 +16,12 @@ var now = time.Now().UTC()
 var happyPathSteps = []Step{
 	{
 		action: StartChainAction{
-			chain:      0,
-			validators: []uint{1, 0, 2},
+			chain: 0,
+			validators: []StartChainValidator{
+				{id: 1, stake: 500000000, allocation: 10000000000},
+				{id: 0, stake: 500000000, allocation: 10000000000},
+				{id: 2, stake: 500000000, allocation: 10000000000},
+			},
 		},
 		state: State{
 			0: ChainState{
@@ -100,7 +104,11 @@ var happyPathSteps = []Step{
 		action: StartConsumerChainAction{
 			consumerChain: 1,
 			providerChain: 0,
-			validators:    []uint{2, 1, 0},
+			validators: []StartChainValidator{
+				{id: 2, stake: 500000000, allocation: 10000000000},
+				{id: 0, stake: 500000000, allocation: 10000000000},
+				{id: 1, stake: 500000000, allocation: 10000000000},
+			},
 		},
 		state: State{
 			0: ChainState{

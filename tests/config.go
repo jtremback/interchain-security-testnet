@@ -14,21 +14,16 @@ type ValidatorConfig struct {
 // Attributes that are unique to a chain. Allows us to map (part of) the set of uints to
 // a set of viable chains
 type ChainConfig struct {
-	chainId           string
-	ipPrefix          string
-	votingWaitTime    uint
-	genesisChanges    string
-	rpcPort           uint
-	grpcPort          uint
-	initialAllocation string
-	stakeAmount       string
+	chainId        string
+	ipPrefix       string
+	votingWaitTime uint
+	genesisChanges string
 }
 
 type ContainerConfig struct {
 	containerName string
 	instanceName  string
 	binaryName    string
-	exposePorts   []uint
 	ccvVersion    string
 }
 
@@ -47,7 +42,6 @@ func DefaultSystemConfig() System {
 			instanceName:  "interchain-security-instance",
 			binaryName:    "interchain-securityd",
 			ccvVersion:    "1",
-			exposePorts:   []uint{9090, 26657, 9089, 26656},
 		},
 		validatorConfigs: []ValidatorConfig{
 			{
@@ -77,20 +71,16 @@ func DefaultSystemConfig() System {
 		},
 		chainConfigs: []ChainConfig{
 			{
-				chainId:           "provider",
-				ipPrefix:          "7.7.7",
-				votingWaitTime:    5,
-				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"5s\"",
-				initialAllocation: "10000000000stake,10000000000footoken",
-				stakeAmount:       "500000000stake",
+				chainId:        "provider",
+				ipPrefix:       "7.7.7",
+				votingWaitTime: 5,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
 			{
-				chainId:           "consumer",
-				ipPrefix:          "7.7.8",
-				votingWaitTime:    10,
-				genesisChanges:    ".app_state.gov.voting_params.voting_period = \"10s\"",
-				initialAllocation: "10000000000stake,10000000000footoken",
-				stakeAmount:       "500000000stake",
+				chainId:        "consumer",
+				ipPrefix:       "7.7.8",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",
 			},
 		},
 	}

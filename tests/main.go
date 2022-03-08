@@ -73,13 +73,7 @@ func (s System) startDocker() {
 		log.Fatal(err)
 	}
 
-	ports_string := ""
-
-	for _, port := range s.containerConfig.exposePorts {
-		ports_string = ports_string + " -p " + fmt.Sprint(port) + ":" + fmt.Sprint(port)
-	}
-
-	cmd := exec.Command("/bin/bash", path+"/start-docker.sh", s.containerConfig.containerName, s.containerConfig.instanceName, ports_string)
+	cmd := exec.Command("/bin/bash", path+"/start-docker.sh", s.containerConfig.containerName, s.containerConfig.instanceName)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
