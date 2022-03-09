@@ -54,7 +54,7 @@ var happyPathSteps = []Step{
 			from:          0,
 			deposit:       10000001,
 			consumerChain: 1,
-			spawnTime:     now,
+			spawnTime:     0,
 			initialHeight: clienttypes.Height{0, 1},
 		},
 		state: State{
@@ -67,7 +67,7 @@ var happyPathSteps = []Step{
 					1: ConsumerProposal{
 						Deposit:       10000001,
 						Chain:         1,
-						SpawnTime:     now,
+						SpawnTime:     0,
 						InitialHeight: clienttypes.Height{0, 1},
 						Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 					},
@@ -88,7 +88,7 @@ var happyPathSteps = []Step{
 					1: ConsumerProposal{
 						Deposit:       10000001,
 						Chain:         1,
-						SpawnTime:     now,
+						SpawnTime:     0,
 						InitialHeight: clienttypes.Height{0, 1},
 						Status:        "PROPOSAL_STATUS_PASSED",
 					},

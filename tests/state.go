@@ -36,7 +36,7 @@ func (p TextProposal) isProposal() {}
 type ConsumerProposal struct {
 	Deposit       uint
 	Chain         uint
-	SpawnTime     time.Time
+	SpawnTime     int
 	InitialHeight clienttypes.Height
 	Status        string
 }
@@ -69,7 +69,7 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 	}
 
 	if modelState.ValPowers != nil {
-		// TODO: this hack should correct intermittent failures
+		// TODO: this hack should correct intermittent failures, replace with something that waits a block
 		time.Sleep(100 * time.Millisecond)
 		powers := s.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
@@ -111,7 +111,7 @@ func (s System) getBalance(chain uint, validator uint) uint {
 		"query", "bank", "balances",
 		s.validatorConfigs[validator].delAddress,
 
-		`--node`, s.getQueryValidatorNode(chain, s.getQueryValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -133,7 +133,7 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, s.getQueryValidatorNode(chain, s.getQueryValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -164,7 +164,7 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.parent.v1.CreateChildChainProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time()
+		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(s.containerConfig.now)
 
 		var chain uint
 		for i, conf := range s.chainConfigs {
@@ -178,7 +178,7 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 			Deposit:   uint(deposit),
 			Status:    status,
 			Chain:     chain,
-			SpawnTime: spawnTime.UTC(),
+			SpawnTime: int(spawnTime.Milliseconds()),
 			InitialHeight: clienttypes.Height{
 				RevisionNumber: gjson.Get(string(bz), `content.initial_height.revision_number`).Uint(),
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
@@ -210,7 +210,7 @@ func (s System) getValPower(chain uint, validator uint) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getQueryValidatorNode(chain, s.getQueryValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
 	).CombinedOutput()
 
 	if err != nil {

@@ -33,8 +33,8 @@ func (s System) sendTokens(
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
-		`--home`, s.getTxValidatorHome(action.chain, action.from),
-		`--node`, s.getQueryValidatorNode(action.chain, action.from),
+		`--home`, s.getValidatorHome(action.chain, action.from),
+		`--node`, s.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -149,7 +149,6 @@ func (s System) submitTextProposal(
 	action SubmitTextProposalAction,
 	verbose bool,
 ) {
-	// docker exec interchain-security-instance interchain-securityd tx gov submit-proposal --title="Test Proposal" --description="My awesome proposal" --type Text --deposit 10000000stake --from validator1 --chain-id provider --home /provider/validator1 --keyring-backend test
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
 		"tx", "gov", "submit-proposal",
@@ -160,8 +159,8 @@ func (s System) submitTextProposal(
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--node`, s.getQueryValidatorNode(action.chain, action.from),
+		`--home`, s.getValidatorHome(action.chain, action.from),
+		`--node`, s.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -177,7 +176,7 @@ type SubmitConsumerProposalAction struct {
 	from          uint
 	deposit       uint
 	consumerChain uint
-	spawnTime     time.Time
+	spawnTime     uint
 	initialHeight clienttypes.Height
 }
 
@@ -197,6 +196,7 @@ func (s System) submitConsumerProposal(
 	action SubmitConsumerProposalAction,
 	verbose bool,
 ) {
+	spawnTime := s.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
 	prop := CreateChildChainProposalJSON{
 		Title:         "Create a chain",
 		Description:   "Gonna be a great chain",
@@ -204,7 +204,7 @@ func (s System) submitConsumerProposal(
 		InitialHeight: action.initialHeight,
 		GenesisHash:   []byte("gen_hash"),
 		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     action.spawnTime,
+		SpawnTime:     spawnTime,
 		Deposit:       fmt.Sprint(action.deposit) + `stake`,
 	}
 
@@ -226,8 +226,8 @@ func (s System) submitConsumerProposal(
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
-		`--home`, `/provider/validator`+fmt.Sprint(action.from),
-		`--node`, s.getQueryValidatorNode(action.chain, action.from),
+		`--home`, s.getValidatorHome(action.chain, action.from),
+		`--node`, s.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -262,8 +262,8 @@ func (s System) voteGovProposal(
 
 				`--from`, `validator`+fmt.Sprint(val),
 				`--chain-id`, s.chainConfigs[action.chain].chainId,
-				`--home`, `/provider/validator`+fmt.Sprint(val),
-				`--node`, s.getQueryValidatorNode(action.chain, action.from[0]),
+				`--home`, s.getValidatorHome(action.chain, val),
+				`--node`, s.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
 				`-b`, `block`,
 				`-y`,
@@ -294,7 +294,7 @@ func (s System) startConsumerChain(
 		"query", "parent", "child-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
-		`--node`, s.getQueryValidatorNode(action.providerChain, s.getQueryValidatorNum(action.providerChain)),
+		`--node`, s.getValidatorNode(action.providerChain, s.getValidatorNum(action.providerChain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -513,8 +513,8 @@ func (s System) delegateTokens(
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
-		`--home`, s.getTxValidatorHome(action.chain, action.from),
-		`--node`, s.getQueryValidatorNode(action.chain, action.from),
+		`--home`, s.getValidatorHome(action.chain, action.from),
+		`--node`, s.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -527,7 +527,7 @@ func (s System) delegateTokens(
 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
-func (s System) getQueryValidatorNum(chain uint) uint {
+func (s System) getValidatorNum(chain uint) uint {
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
 
@@ -543,10 +543,10 @@ func (s System) getQueryValidatorNum(chain uint) uint {
 	return uint(validator)
 }
 
-func (s System) getQueryValidatorNode(chain uint, validator uint) string {
+func (s System) getValidatorNode(chain uint, validator uint) string {
 	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
 }
 
-func (s System) getTxValidatorHome(chain uint, validator uint) string {
+func (s System) getValidatorHome(chain uint, validator uint) string {
 	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }

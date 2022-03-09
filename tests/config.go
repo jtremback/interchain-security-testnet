@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 // Attributes that are unique to a validator. Allows us to map (part of) the set of uints to
 // a set of viable validators
 type ValidatorConfig struct {
@@ -25,6 +27,7 @@ type ContainerConfig struct {
 	instanceName  string
 	binaryName    string
 	ccvVersion    string
+	now           time.Time
 }
 
 // These values will not be altered during a typical test run
@@ -42,6 +45,7 @@ func DefaultSystemConfig() System {
 			instanceName:  "interchain-security-instance",
 			binaryName:    "interchain-securityd",
 			ccvVersion:    "1",
+			now:           time.Now(),
 		},
 		validatorConfigs: []ValidatorConfig{
 			{
