@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -23,6 +24,79 @@ func main() {
 	}
 
 	println("test successful")
+}
+
+type ActionEntry struct {
+	Executor func(interface{}, bool)
+	Action   interface{}
+}
+
+type StepJSON struct {
+	ActionType string
+	Action     json.RawMessage
+	state      State
+}
+
+func (s System) serializedStepsDraft() {
+	actionEntries := map[string]ActionEntry{
+		"StartChainAction": {
+			Executor: s.startChain,
+			Action:   StartChainAction{},
+		},
+	}
+
+	steps := `{
+        "actionType": "StartChainAction",
+        "action": {
+            "chain": 0,
+            "validators": [{
+                    "id": 1,
+                    "stake": 500000000,
+                    "allocation": 10000000000
+                },
+                {
+                    "id": 0,
+                    "stake": 500000000,
+                    "allocation": 10000000000
+                },
+                {
+                    "id": 2,
+                    "stake": 500000000,
+                    "allocation": 10000000000
+                }
+            ]
+        },
+        "state": {
+            "0": {
+                "ValBalances": {
+                    "0": 9500000000,
+                    "1": 9500000000
+                }
+            }
+        }
+    }`
+
+	pStep := StepJSON{}
+
+	// Unmarshal to get action type so that we can do the rest
+	json.Unmarshal([]byte(steps), &pStep)
+
+	action := actionEntries[pStep.ActionType].Action
+	json.Unmarshal(pStep.Action, &action)
+
+	actionEntries[pStep.ActionType].Executor(action, true)
+
+	modelState := pStep.state
+	actualState := s.getState(pStep.state)
+
+	// Check state
+	if !reflect.DeepEqual(actualState, modelState) {
+		pretty.Print("actual state", actualState)
+		pretty.Print("model state", modelState)
+		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
+	}
+
+	pretty.Print(actualState)
 }
 
 func (s System) runStep(step Step, verbose bool) {

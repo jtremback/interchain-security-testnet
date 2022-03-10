@@ -1,17 +1,14 @@
 package main
 
 import (
-	"time"
-
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 )
 
 type Step struct {
-	action interface{}
-	state  State
+	actionType string
+	action     interface{}
+	state      State
 }
-
-var now = time.Now().UTC()
 
 var happyPathSteps = []Step{
 	{

@@ -59,81 +59,86 @@ type StartChainValidator struct {
 }
 
 func (s System) startChain(
-	action StartChainAction,
+	action interface{},
 	verbose bool,
 ) {
-	chainConfig := s.chainConfigs[action.chain]
-	type jsonValAttrs struct {
-		Mnemonic         string `json:"mnemonic"`
-		Allocation       string `json:"allocation"`
-		Stake            string `json:"stake"`
-		Number           string `json:"number"`
-		PrivValidatorKey string `json:"priv_validator_key"`
-		NodeKey          string `json:"node_key"`
-	}
-
-	var validators []jsonValAttrs
-	for _, val := range action.validators {
-		validators = append(validators, jsonValAttrs{
-			Mnemonic:         s.validatorConfigs[val.id].mnemonic,
-			NodeKey:          s.validatorConfigs[val.id].nodeKey,
-			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
-			Allocation:       fmt.Sprint(val.allocation) + "stake",
-			Stake:            fmt.Sprint(val.stake) + "stake",
-			Number:           fmt.Sprint(val.id),
-		})
-	}
-
-	vals, err := json.Marshal(validators)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var genesisChanges string
-	if action.genesisChanges != "" {
-		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
-	} else {
-		genesisChanges = chainConfig.genesisChanges
-	}
-
-	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/start-chain.sh", s.containerConfig.binaryName, string(vals),
-		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
-		fmt.Sprint(action.skipGentx),
-		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
-			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
-		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
-	)
-
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("startChain: " + out)
+	switch action := action.(type) {
+	case StartChainAction:
+		chainConfig := s.chainConfigs[action.chain]
+		type jsonValAttrs struct {
+			Mnemonic         string `json:"mnemonic"`
+			Allocation       string `json:"allocation"`
+			Stake            string `json:"stake"`
+			Number           string `json:"number"`
+			PrivValidatorKey string `json:"priv_validator_key"`
+			NodeKey          string `json:"node_key"`
 		}
-		if out == "done!!!!!!!!" {
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
 
-	s.addChainToRelayer(AddChainToRelayerAction{
-		chain:     action.chain,
-		validator: action.validators[0].id,
-	}, verbose)
+		var validators []jsonValAttrs
+		for _, val := range action.validators {
+			validators = append(validators, jsonValAttrs{
+				Mnemonic:         s.validatorConfigs[val.id].mnemonic,
+				NodeKey:          s.validatorConfigs[val.id].nodeKey,
+				PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
+				Allocation:       fmt.Sprint(val.allocation) + "stake",
+				Stake:            fmt.Sprint(val.stake) + "stake",
+				Number:           fmt.Sprint(val.id),
+			})
+		}
+
+		vals, err := json.Marshal(validators)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var genesisChanges string
+		if action.genesisChanges != "" {
+			genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
+		} else {
+			genesisChanges = chainConfig.genesisChanges
+		}
+
+		cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
+			"/testnet-scripts/start-chain.sh", s.containerConfig.binaryName, string(vals),
+			chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
+			fmt.Sprint(action.skipGentx),
+			`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
+				`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
+			// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
+		)
+
+		cmdReader, err := cmd.StdoutPipe()
+		if err != nil {
+			log.Fatal(err)
+		}
+		cmd.Stderr = cmd.Stdout
+
+		if err := cmd.Start(); err != nil {
+			log.Fatal(err)
+		}
+
+		scanner := bufio.NewScanner(cmdReader)
+
+		for scanner.Scan() {
+			out := scanner.Text()
+			if verbose {
+				fmt.Println("startChain: " + out)
+			}
+			if out == "done!!!!!!!!" {
+				break
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+
+		s.addChainToRelayer(AddChainToRelayerAction{
+			chain:     action.chain,
+			validator: action.validators[0].id,
+		}, verbose)
+	default:
+		panic("wrong action type")
+	}
 }
 
 type SubmitTextProposalAction struct {
